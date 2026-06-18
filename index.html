@@ -4,14 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>WebDrop Pro – Secure P2P File Exchange</title>
-    <!-- Font Awesome Icons (free) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <style>
-        /* ----- CSS Variables (light / dark) ----- */
+        /* ----- Reset & Full Screen ----- */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            min-height: 100vh;
+            background: var(--bg-body);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            transition: background 0.25s ease, color 0.25s ease;
+            color: var(--text-primary);
+            overflow-x: hidden;
         }
 
         :root {
@@ -30,7 +40,7 @@
             --text-light: #f8fafc;
             --border-color: #cbd5e1;
             --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
-            --radius: 20px;
+            --radius: 16px;
             --transition: 0.25s ease;
             --accent: #2563eb;
             --accent-hover: #1d4ed8;
@@ -66,39 +76,23 @@
             --radar-sweep: rgba(59, 130, 246, 0.25);
         }
 
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg-body);
-            min-height: 100vh;
+        #app {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            margin: 0;
-            transition: background var(--transition), color var(--transition);
-            color: var(--text-primary);
-        }
-
-        .container {
-            width: 100%;
-            max-width: 960px;
+            flex-direction: column;
+            min-height: 100vh;
             background: var(--bg-container);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            transition: background var(--transition), border var(--transition);
+            transition: background var(--transition);
         }
 
         /* ----- Header ----- */
         .header {
             background: var(--bg-header);
-            padding: 20px 28px;
+            padding: 16px 28px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 16px;
+            gap: 12px;
             border-bottom: 1px solid var(--border-color);
             transition: background var(--transition), border var(--transition);
         }
@@ -110,7 +104,7 @@
         }
 
         .header-logo {
-            height: 56px;  /* increased from 42px */
+            height: 64px;
             width: auto;
             display: block;
             border-radius: 8px;
@@ -119,23 +113,23 @@
 
         .header-title {
             color: var(--text-light);
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             font-weight: 700;
             letter-spacing: -0.3px;
+            line-height: 1.2;
         }
         .header-title small {
             font-weight: 400;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             opacity: 0.7;
             display: block;
             margin-top: 2px;
-            letter-spacing: 0;
         }
 
         .header-controls {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
         }
 
@@ -147,9 +141,9 @@
             padding: 8px 16px;
             font-size: 0.9rem;
             color: var(--text-primary);
-            transition: background var(--transition), border var(--transition), color var(--transition);
+            transition: background var(--transition), border var(--transition);
             outline: none;
-            min-width: 120px;
+            min-width: 110px;
         }
         .header-controls select:focus,
         .header-controls input:focus {
@@ -177,13 +171,17 @@
 
         /* ----- Content ----- */
         .content {
+            flex: 1;
             padding: 28px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
         }
 
         /* ID card */
         .id-card {
             background: var(--bg-card);
-            border-radius: 16px;
+            border-radius: var(--radius);
             padding: 20px 24px;
             margin-bottom: 24px;
             display: flex;
@@ -261,9 +259,6 @@
             font-size: 0.85rem;
             font-weight: 600;
         }
-        .status-badge i {
-            font-size: 0.7rem;
-        }
         .status-badge .pulse {
             display: inline-block;
             width: 8px;
@@ -285,7 +280,7 @@
         /* Radar */
         .radar-section {
             background: var(--bg-card);
-            border-radius: 16px;
+            border-radius: var(--radius);
             padding: 24px;
             margin-bottom: 24px;
             text-align: center;
@@ -302,7 +297,7 @@
             color: var(--text-secondary);
         }
         .radar-title i {
-            font-size: 1.4rem;
+            font-size: 1.6rem;
             color: var(--accent);
         }
 
@@ -391,7 +386,7 @@
         /* Connection panel */
         .connection-panel {
             background: var(--bg-card);
-            border-radius: 16px;
+            border-radius: var(--radius);
             padding: 20px 24px;
             margin-bottom: 24px;
             border: 1px solid var(--border-color);
@@ -460,16 +455,6 @@
             background: #15803d;
             transform: translateY(-2px);
         }
-        .btn-outline {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-        }
-        .btn-outline:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-            background: var(--accent-glow);
-        }
 
         .status-text {
             text-align: center;
@@ -482,14 +467,14 @@
             transition: background var(--transition);
         }
 
-        /* Transfer area (hidden by default) */
+        /* Transfer area */
         .transfer-area {
             display: none;
         }
 
         .peer-info {
             background: var(--bg-card);
-            border-radius: 16px;
+            border-radius: var(--radius);
             padding: 16px 24px;
             margin-bottom: 24px;
             display: flex;
@@ -527,7 +512,6 @@
             color: var(--accent);
         }
 
-        /* File actions */
         .file-actions {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -538,7 +522,7 @@
         .file-btn {
             background: var(--bg-card);
             border: 1px dashed var(--border-color);
-            border-radius: 16px;
+            border-radius: var(--radius);
             padding: 20px 12px;
             cursor: pointer;
             transition: all var(--transition);
@@ -569,7 +553,7 @@
         /* Chat */
         .chat-area {
             background: var(--bg-card);
-            border-radius: 16px;
+            border-radius: var(--radius);
             overflow: hidden;
             border: 1px solid var(--border-color);
             transition: background var(--transition), border var(--transition);
@@ -707,7 +691,7 @@
             transform: translateY(-2px);
         }
 
-        /* Footer */
+        /* ----- Footer ----- */
         .footer {
             text-align: center;
             padding: 18px 28px;
@@ -716,6 +700,10 @@
             color: var(--text-muted);
             background: var(--bg-card);
             transition: background var(--transition), border var(--transition);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
         }
         .footer a {
             color: var(--accent);
@@ -728,7 +716,47 @@
             text-decoration: underline;
         }
 
-        /* Loading spinner */
+        /* ----- Cookie Consent ----- */
+        .cookie-consent {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-header);
+            color: var(--text-light);
+            padding: 16px 28px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            z-index: 999;
+            border-top: 1px solid var(--border-color);
+            transition: transform 0.4s ease;
+        }
+        .cookie-consent.hidden {
+            transform: translateY(100%);
+        }
+        .cookie-consent p {
+            font-size: 0.9rem;
+            margin: 0;
+            opacity: 0.9;
+        }
+        .cookie-consent .btn {
+            background: var(--accent);
+            color: #fff;
+            padding: 8px 24px;
+            font-size: 0.9rem;
+        }
+        .cookie-consent .btn:hover {
+            background: var(--accent-hover);
+        }
+        .cookie-consent a {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
+        /* Loading */
         .loading {
             display: inline-block;
             width: 18px;
@@ -750,6 +778,7 @@
                 flex-direction: column;
                 align-items: stretch;
                 gap: 12px;
+                padding: 16px;
             }
             .header-left {
                 justify-content: center;
@@ -799,6 +828,12 @@
                 width: 18px;
                 height: 18px;
             }
+            .content {
+                padding: 16px;
+            }
+            .header-logo {
+                height: 48px;
+            }
         }
 
         @media (max-width: 420px) {
@@ -812,16 +847,19 @@
                 padding: 10px 18px;
                 font-size: 0.85rem;
             }
+            .cookie-consent {
+                flex-direction: column;
+                text-align: center;
+                padding: 16px;
+            }
         }
     </style>
 </head>
 <body>
-
-    <div class="container" id="appContainer">
+    <div id="app">
         <!-- ===== HEADER ===== -->
         <header class="header">
             <div class="header-left">
-                <!-- logo (updated URL and enlarged via CSS) -->
                 <img class="header-logo" src="https://iili.io/CxcDCDx.png" alt="WebDrop Pro" />
                 <div class="header-title">
                     WebDrop Pro
@@ -829,18 +867,15 @@
                 </div>
             </div>
             <div class="header-controls">
-                <!-- Device name -->
                 <input type="text" id="deviceNameInput" placeholder="Device name" value="My Device" maxlength="20" />
-                <!-- Language selector -->
                 <select id="langSelect">
-                    <option value="en">🇬🇧 English</option>
-                    <option value="es">🇪🇸 Español</option>
-                    <option value="fr">🇫🇷 Français</option>
-                    <option value="de">🇩🇪 Deutsch</option>
-                    <option value="pt">🇵🇹 Português</option>
-                    <option value="zh">🇨🇳 中文</option>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                    <option value="pt">Português</option>
+                    <option value="zh">中文</option>
                 </select>
-                <!-- Dark mode toggle -->
                 <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
                     <i class="fas fa-moon"></i>
                 </button>
@@ -898,7 +933,7 @@
                 </div>
             </div>
 
-            <!-- Transfer Area (hidden until connected) -->
+            <!-- Transfer Area -->
             <div class="transfer-area" id="transferArea">
                 <div class="peer-info">
                     <div class="peer-badge">
@@ -954,10 +989,24 @@
 
         <!-- ===== FOOTER ===== -->
         <div class="footer">
-            &copy; <span id="footerYear">2026</span> WebDrop Pro. All rights reserved.
-            <br />
-            Website developed by:
-            <a href="https://websolutionsza.github.io/websolutionsSA/" target="_blank" rel="noopener">WebSolutionsSA</a>
+            <span>&copy; <span id="footerYear">2026</span> WebDrop Pro. All rights reserved.</span>
+            <span>
+                <a href="#" id="termsLink">Terms &amp; Conditions</a>
+                &nbsp;·&nbsp;
+                <a href="#" id="privacyLink">Privacy</a>
+            </span>
+            <span>Developed by <a href="https://websolutionsza.github.io/websolutionsSA/" target="_blank" rel="noopener">WebSolutionsSA</a></span>
+        </div>
+
+        <!-- ===== COOKIE CONSENT ===== -->
+        <div class="cookie-consent" id="cookieConsent">
+            <p>
+                <i class="fas fa-cookie-bite"></i>
+                We use cookies to improve your experience. By using our site you accept our
+                <a href="#" id="cookieTermsLink">Terms &amp; Conditions</a> and
+                <a href="#" id="cookiePrivacyLink">Privacy Policy</a>.
+            </p>
+            <button class="btn" id="acceptCookiesBtn">Accept</button>
         </div>
     </div>
 
@@ -985,19 +1034,17 @@
                     sendVideo: 'Send Video',
                     sendFolder: 'Send Folder',
                     secureChat: 'Secure Chat',
-                    systemConnected: '🔒 Secure connection established',
+                    systemConnected: 'Secure connection established',
                     systemClosed: 'Connection closed',
                     systemSending: 'Sending {name}...',
-                    systemSent: '✅ Sent: {name}',
-                    systemFolder: '📁 Sending folder: {name} ({count} files)',
-                    systemFolderSent: '✅ Folder sent: {name}',
-                    systemError: '❌ Error sending {name}',
-                    systemJava: '📦 Java processed: {name}',
+                    systemSent: 'Sent: {name}',
+                    systemFolder: 'Sending folder: {name} ({count} files)',
+                    systemFolderSent: 'Folder sent: {name}',
+                    systemError: 'Error sending {name}',
                     fileDownload: 'Download',
                     connecting: 'Connecting...',
                     connected: 'Connected successfully',
                     failed: 'Connection failed',
-                    peerJoined: 'Peer joined',
                 },
                 es: {
                     deviceId: 'Tu ID de dispositivo',
@@ -1012,19 +1059,17 @@
                     sendVideo: 'Enviar video',
                     sendFolder: 'Enviar carpeta',
                     secureChat: 'Chat seguro',
-                    systemConnected: '🔒 Conexión segura establecida',
+                    systemConnected: 'Conexión segura establecida',
                     systemClosed: 'Conexión cerrada',
                     systemSending: 'Enviando {name}...',
-                    systemSent: '✅ Enviado: {name}',
-                    systemFolder: '📁 Enviando carpeta: {name} ({count} archivos)',
-                    systemFolderSent: '✅ Carpeta enviada: {name}',
-                    systemError: '❌ Error al enviar {name}',
-                    systemJava: '📦 Procesado con Java: {name}',
+                    systemSent: 'Enviado: {name}',
+                    systemFolder: 'Enviando carpeta: {name} ({count} archivos)',
+                    systemFolderSent: 'Carpeta enviada: {name}',
+                    systemError: 'Error al enviar {name}',
                     fileDownload: 'Descargar',
                     connecting: 'Conectando...',
                     connected: 'Conectado exitosamente',
                     failed: 'Conexión fallida',
-                    peerJoined: 'Usuario conectado',
                 },
                 fr: {
                     deviceId: 'Votre ID d\'appareil',
@@ -1039,19 +1084,17 @@
                     sendVideo: 'Envoyer une vidéo',
                     sendFolder: 'Envoyer un dossier',
                     secureChat: 'Chat sécurisé',
-                    systemConnected: '🔒 Connexion sécurisée établie',
+                    systemConnected: 'Connexion sécurisée établie',
                     systemClosed: 'Connexion fermée',
                     systemSending: 'Envoi de {name}...',
-                    systemSent: '✅ Envoyé : {name}',
-                    systemFolder: '📁 Envoi du dossier : {name} ({count} fichiers)',
-                    systemFolderSent: '✅ Dossier envoyé : {name}',
-                    systemError: '❌ Erreur lors de l\'envoi de {name}',
-                    systemJava: '📦 Traité par Java : {name}',
+                    systemSent: 'Envoyé : {name}',
+                    systemFolder: 'Envoi du dossier : {name} ({count} fichiers)',
+                    systemFolderSent: 'Dossier envoyé : {name}',
+                    systemError: 'Erreur lors de l\'envoi de {name}',
                     fileDownload: 'Télécharger',
                     connecting: 'Connexion...',
                     connected: 'Connecté avec succès',
                     failed: 'Échec de la connexion',
-                    peerJoined: 'Utilisateur connecté',
                 },
                 de: {
                     deviceId: 'Ihre Geräte-ID',
@@ -1066,19 +1109,17 @@
                     sendVideo: 'Video senden',
                     sendFolder: 'Ordner senden',
                     secureChat: 'Sicherer Chat',
-                    systemConnected: '🔒 Sichere Verbindung hergestellt',
+                    systemConnected: 'Sichere Verbindung hergestellt',
                     systemClosed: 'Verbindung geschlossen',
                     systemSending: 'Sende {name}...',
-                    systemSent: '✅ Gesendet: {name}',
-                    systemFolder: '📁 Sende Ordner: {name} ({count} Dateien)',
-                    systemFolderSent: '✅ Ordner gesendet: {name}',
-                    systemError: '❌ Fehler beim Senden von {name}',
-                    systemJava: '📦 Java-verarbeitet: {name}',
+                    systemSent: 'Gesendet: {name}',
+                    systemFolder: 'Sende Ordner: {name} ({count} Dateien)',
+                    systemFolderSent: 'Ordner gesendet: {name}',
+                    systemError: 'Fehler beim Senden von {name}',
                     fileDownload: 'Herunterladen',
                     connecting: 'Verbinde...',
                     connected: 'Erfolgreich verbunden',
                     failed: 'Verbindung fehlgeschlagen',
-                    peerJoined: 'Teilnehmer verbunden',
                 },
                 pt: {
                     deviceId: 'Seu ID de dispositivo',
@@ -1093,19 +1134,17 @@
                     sendVideo: 'Enviar vídeo',
                     sendFolder: 'Enviar pasta',
                     secureChat: 'Chat seguro',
-                    systemConnected: '🔒 Conexão segura estabelecida',
+                    systemConnected: 'Conexão segura estabelecida',
                     systemClosed: 'Conexão encerrada',
                     systemSending: 'Enviando {name}...',
-                    systemSent: '✅ Enviado: {name}',
-                    systemFolder: '📁 Enviando pasta: {name} ({count} arquivos)',
-                    systemFolderSent: '✅ Pasta enviada: {name}',
-                    systemError: '❌ Erro ao enviar {name}',
-                    systemJava: '📦 Processado por Java: {name}',
+                    systemSent: 'Enviado: {name}',
+                    systemFolder: 'Enviando pasta: {name} ({count} arquivos)',
+                    systemFolderSent: 'Pasta enviada: {name}',
+                    systemError: 'Erro ao enviar {name}',
                     fileDownload: 'Baixar',
                     connecting: 'Conectando...',
                     connected: 'Conectado com sucesso',
                     failed: 'Falha na conexão',
-                    peerJoined: 'Usuário conectado',
                 },
                 zh: {
                     deviceId: '您的设备ID',
@@ -1120,19 +1159,17 @@
                     sendVideo: '发送视频',
                     sendFolder: '发送文件夹',
                     secureChat: '安全聊天',
-                    systemConnected: '🔒 安全连接已建立',
+                    systemConnected: '安全连接已建立',
                     systemClosed: '连接已关闭',
                     systemSending: '正在发送 {name}...',
-                    systemSent: '✅ 已发送：{name}',
-                    systemFolder: '📁 正在发送文件夹：{name}（{count} 个文件）',
-                    systemFolderSent: '✅ 文件夹已发送：{name}',
-                    systemError: '❌ 发送 {name} 时出错',
-                    systemJava: '📦 Java 已处理：{name}',
+                    systemSent: '已发送：{name}',
+                    systemFolder: '正在发送文件夹：{name}（{count} 个文件）',
+                    systemFolderSent: '文件夹已发送：{name}',
+                    systemError: '发送 {name} 时出错',
                     fileDownload: '下载',
                     connecting: '连接中...',
                     connected: '连接成功',
                     failed: '连接失败',
-                    peerJoined: '用户已加入',
                 }
             };
 
@@ -1153,7 +1190,6 @@
                     const key = el.getAttribute('data-i18n');
                     el.textContent = t(key);
                 });
-                // placeholders
                 const ph = document.getElementById('targetId');
                 if (ph) ph.placeholder = t('connect') + ' ID...';
                 const msgPh = document.getElementById('msgInput');
@@ -1165,26 +1201,25 @@
             document.getElementById('langSelect').addEventListener('change', function() {
                 currentLang = this.value;
                 updateUI();
-                // re-translate dynamic messages if needed
             });
 
             // ---------- Theme ----------
             const themeToggle = document.getElementById('themeToggle');
-            const container = document.getElementById('appContainer');
+            const app = document.getElementById('app');
             let dark = false;
 
             function setTheme(darkMode) {
                 dark = darkMode;
-                container.setAttribute('data-theme', dark ? 'dark' : 'light');
+                app.setAttribute('data-theme', dark ? 'dark' : 'light');
                 themeToggle.innerHTML = dark ?
                     '<i class="fas fa-sun"></i>' :
                     '<i class="fas fa-moon"></i>';
                 localStorage.setItem('webdrop-theme', dark ? 'dark' : 'light');
             }
 
-            const saved = localStorage.getItem('webdrop-theme');
-            if (saved === 'dark') setTheme(true);
-            else if (saved === 'light') setTheme(false);
+            const savedTheme = localStorage.getItem('webdrop-theme');
+            if (savedTheme === 'dark') setTheme(true);
+            else if (savedTheme === 'light') setTheme(false);
             else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme(true);
 
             themeToggle.addEventListener('click', () => setTheme(!dark));
@@ -1200,10 +1235,8 @@
                 const name = deviceNameInput.value.trim() || 'Device';
                 const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
                 avatarDisplay.textContent = initials || 'DV';
-                // also update peer name if needed
             }
             deviceNameInput.addEventListener('input', updateAvatar);
-            // load saved name
             const savedName = localStorage.getItem('webdrop-deviceName');
             if (savedName) {
                 deviceNameInput.value = savedName;
@@ -1212,6 +1245,27 @@
             deviceNameInput.addEventListener('change', function() {
                 localStorage.setItem('webdrop-deviceName', this.value.trim() || 'My Device');
                 updateAvatar();
+            });
+
+            // ---------- Cookie Consent ----------
+            const cookieConsent = document.getElementById('cookieConsent');
+            const acceptCookiesBtn = document.getElementById('acceptCookiesBtn');
+
+            if (localStorage.getItem('cookiesAccepted') === 'true') {
+                cookieConsent.classList.add('hidden');
+            }
+
+            acceptCookiesBtn.addEventListener('click', function() {
+                localStorage.setItem('cookiesAccepted', 'true');
+                cookieConsent.classList.add('hidden');
+            });
+
+            // Terms & Conditions links (placeholder)
+            document.querySelectorAll('#termsLink, #cookieTermsLink, #privacyLink, #cookiePrivacyLink').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    alert('Terms and Conditions & Privacy Policy pages would be displayed here.\n(Full legal text can be added as a modal or separate page.)');
+                });
             });
 
             // ---------- PeerJS App ----------
@@ -1255,10 +1309,6 @@
                 addMessage('System', t(key, vars), 'system');
             }
 
-            function scrollToBottom() {
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }
-
             function resetUI() {
                 conn = null;
                 setupArea.style.display = 'block';
@@ -1268,7 +1318,6 @@
                 statusText.dataset.custom = 'false';
                 statusText.style.color = '';
                 chatBox.innerHTML = '';
-                // stop radar simulation? we keep it running
             }
 
             function showTransferUI(peerId) {
@@ -1284,11 +1333,9 @@
             function startRadar() {
                 if (radarInterval) return;
                 radarInterval = setInterval(() => {
+                    const existing = radarWrapper.querySelectorAll('.radar-device');
+                    existing.forEach(el => el.remove());
                     if (conn) {
-                        // if connected, show only the connected peer as a single dot?
-                        // keep it simple: remove all and add one
-                        const existing = radarWrapper.querySelectorAll('.radar-device');
-                        existing.forEach(el => el.remove());
                         const d = document.createElement('div');
                         d.className = 'radar-device';
                         d.style.left = '50%';
@@ -1300,9 +1347,6 @@
                         peersCount.textContent = '1 peer online';
                         return;
                     }
-                    // random devices
-                    const existing = radarWrapper.querySelectorAll('.radar-device');
-                    existing.forEach(el => el.remove());
                     const count = Math.floor(Math.random() * 4);
                     peersCount.textContent = `${count} peer${count !== 1 ? 's' : ''} online`;
                     for (let i = 0; i < count; i++) {
@@ -1311,7 +1355,7 @@
                         const angle = Math.random() * 2 * Math.PI;
                         const dist = 50 + Math.random() * 70;
                         const cx = 120,
-                            cy = 120; // center of 240px radar
+                            cy = 120;
                         const x = cx + dist * Math.cos(angle);
                         const y = cy + dist * Math.sin(angle);
                         d.style.left = x + 'px';
@@ -1366,7 +1410,6 @@
                 peer.on('error', (err) => {
                     console.error('peer error:', err);
                     if (err.type === 'unavailable-id') {
-                        // retry with new id
                         myId = Math.floor(1000 + Math.random() * 9000).toString();
                         myIdDisplay.textContent = myId;
                         peer.destroy();
@@ -1420,103 +1463,87 @@
             function handleIncomingData(data) {
                 if (data.type === 'text') {
                     addMessage('Peer', data.payload, 'received');
-                } else if (data.type === 'file' || data.type === 'java-processed') {
+                } else if (data.type === 'file') {
                     receiveFile(data);
-                } else if (data.type === 'system') {
-                    systemMessage(data.payload);
-                }
-            }
-
-            // ---------- Receive file ----------
-            function receiveFile(data) {
-                let blob;
-                const payload = data.payload;
-                if (payload && payload.data && typeof payload.data === 'string' && payload.data.includes(',')) {
-                    // data URL
-                    const byteString = atob(payload.data.split(',')[1]);
-                    const ab = new ArrayBuffer(byteString.length);
-                    const ia = new Uint8Array(ab);
-                    for (let i = 0; i < byteString.length; i++) {
-                        ia[i] = byteString.charCodeAt(i);
-                    }
-                    blob = new Blob([ab], { type: data.filetype || 'application/octet-stream' });
-                } else if (payload instanceof Blob) {
-                    blob = payload;
-                } else if (payload instanceof ArrayBuffer) {
-                    blob = new Blob([payload], { type: data.filetype || 'application/octet-stream' });
                 } else {
-                    // fallback
-                    blob = new Blob([payload], { type: data.filetype || 'application/octet-stream' });
+                    console.warn('Unknown data type', data);
                 }
-
-                const url = URL.createObjectURL(blob);
-                const filename = data.filename || 'file';
-
-                const msgDiv = document.createElement('div');
-                msgDiv.className = 'message received';
-
-                const info = document.createElement('div');
-                info.innerHTML = `<strong><i class="fas fa-paperclip"></i> ${filename}</strong>`;
-                if (data.filesize) {
-                    const size = (data.filesize / 1024).toFixed(1);
-                    info.innerHTML += `<div style="font-size:0.75rem;color:var(--text-muted);">${size} KB</div>`;
-                }
-                msgDiv.appendChild(info);
-
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = filename;
-                link.className = 'btn btn-success';
-                link.style.cssText = 'margin-top:8px;padding:6px 16px;font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;';
-                link.innerHTML = `<i class="fas fa-download"></i> ${t('fileDownload')}`;
-                msgDiv.appendChild(link);
-
-                // preview
-                if (data.filetype && data.filetype.startsWith('image/')) {
-                    const img = document.createElement('img');
-                    img.src = url;
-                    img.className = 'file-preview';
-                    img.style.maxHeight = '160px';
-                    msgDiv.appendChild(img);
-                } else if (data.filetype && data.filetype.startsWith('video/')) {
-                    const vid = document.createElement('video');
-                    vid.src = url;
-                    vid.controls = true;
-                    vid.className = 'file-preview';
-                    vid.style.maxHeight = '160px';
-                    msgDiv.appendChild(vid);
-                }
-
-                chatBox.appendChild(msgDiv);
-                scrollToBottom();
             }
 
-            // ---------- Send file ----------
+            // ---------- FIXED: Receive file (robust) ----------
+            function receiveFile(data) {
+                const payload = data.payload;
+                // payload is a data URL string
+                if (typeof payload !== 'string' || !payload.startsWith('data:')) {
+                    console.error('Invalid payload:', payload);
+                    return;
+                }
+
+                // Use fetch to convert data URL to Blob (most reliable)
+                fetch(payload)
+                    .then(res => res.blob())
+                    .then(blob => {
+                        const url = URL.createObjectURL(blob);
+                        const filename = data.filename || 'file';
+                        const mimeType = blob.type || data.filetype || 'application/octet-stream';
+
+                        const msgDiv = document.createElement('div');
+                        msgDiv.className = 'message received';
+
+                        const info = document.createElement('div');
+                        info.innerHTML = `<strong><i class="fas fa-paperclip"></i> ${filename}</strong>`;
+                        if (data.filesize) {
+                            const size = (data.filesize / 1024).toFixed(1);
+                            info.innerHTML += `<div style="font-size:0.75rem;color:var(--text-muted);">${size} KB</div>`;
+                        }
+                        msgDiv.appendChild(info);
+
+                        // Download link
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = filename;
+                        link.className = 'btn btn-success';
+                        link.style.cssText = 'margin-top:8px;padding:6px 16px;font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;';
+                        link.innerHTML = `<i class="fas fa-download"></i> ${t('fileDownload')}`;
+                        msgDiv.appendChild(link);
+
+                        // Preview for images/videos
+                        if (mimeType.startsWith('image/')) {
+                            const img = document.createElement('img');
+                            img.src = url;
+                            img.className = 'file-preview';
+                            img.style.maxHeight = '160px';
+                            msgDiv.appendChild(img);
+                        } else if (mimeType.startsWith('video/')) {
+                            const vid = document.createElement('video');
+                            vid.src = url;
+                            vid.controls = true;
+                            vid.className = 'file-preview';
+                            vid.style.maxHeight = '160px';
+                            msgDiv.appendChild(vid);
+                        }
+
+                        chatBox.appendChild(msgDiv);
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    })
+                    .catch(err => {
+                        console.error('Failed to decode file:', err);
+                        systemMessage('systemError', { name: data.filename || 'file' });
+                    });
+            }
+
+            // ---------- Send file (always data URL) ----------
             function sendFile(file, metadata) {
                 if (!conn) return;
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const data = e.target.result;
-                    let payload = data;
-                    if (typeof data === 'string' && data.startsWith('data:')) {
-                        // keep as data URL
-                    } else if (data instanceof ArrayBuffer) {
-                        // convert to base64 for simplicity
-                        const bytes = new Uint8Array(data);
-                        let binary = '';
-                        for (let i = 0; i < bytes.length; i++) {
-                            binary += String.fromCharCode(bytes[i]);
-                        }
-                        payload = btoa(binary);
-                        // wrap as data URL
-                        payload = `data:${file.type};base64,${payload}`;
-                    }
+                    const dataUrl = e.target.result;
                     conn.send({
                         type: 'file',
                         filename: file.name,
                         filetype: file.type,
                         filesize: file.size,
-                        payload: payload,
+                        payload: dataUrl,
                         metadata: metadata || {}
                     });
                     systemMessage('systemSent', { name: file.name });
@@ -1524,11 +1551,7 @@
                 reader.onerror = function() {
                     systemMessage('systemError', { name: file.name });
                 };
-                if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
-                    reader.readAsDataURL(file);
-                } else {
-                    reader.readAsArrayBuffer(file);
-                }
+                reader.readAsDataURL(file);
             }
 
             // ---------- File input handlers ----------
@@ -1558,37 +1581,21 @@
                 if (!files.length || !conn) return;
                 const folderName = files[0].webkitRelativePath.split('/')[0];
                 systemMessage('systemFolder', { name: folderName, count: files.length });
-                // send each file with path
                 for (const file of files) {
                     const relPath = file.webkitRelativePath;
-                    // we'll send as separate files with path in filename
                     const reader = new FileReader();
                     reader.onload = function(ev) {
-                        let payload = ev.target.result;
-                        if (typeof payload === 'string' && payload.startsWith('data:')) {
-                            // ok
-                        } else if (payload instanceof ArrayBuffer) {
-                            const bytes = new Uint8Array(payload);
-                            let binary = '';
-                            for (let i = 0; i < bytes.length; i++) {
-                                binary += String.fromCharCode(bytes[i]);
-                            }
-                            payload = `data:${file.type};base64,${btoa(binary)}`;
-                        }
+                        const dataUrl = ev.target.result;
                         conn.send({
                             type: 'file',
                             filename: relPath,
                             filetype: file.type,
                             filesize: file.size,
-                            payload: payload,
+                            payload: dataUrl,
                             metadata: { folder: true }
                         });
                     };
-                    if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
-                        reader.readAsDataURL(file);
-                    } else {
-                        reader.readAsArrayBuffer(file);
-                    }
+                    reader.readAsDataURL(file);
                 }
                 systemMessage('systemFolderSent', { name: folderName });
                 this.value = '';
@@ -1632,7 +1639,6 @@
                         setTimeout(() => { this.innerHTML = orig; }, 1500);
                     }).catch(() => {});
                 } else {
-                    // fallback
                     const ta = document.createElement('textarea');
                     ta.value = id;
                     document.body.appendChild(ta);
@@ -1649,16 +1655,12 @@
             initPeer();
             updateUI();
 
-            // re-apply i18n on language change for dynamic elements
+            // Language change re‑translation for status if not custom
             document.getElementById('langSelect').addEventListener('change', function() {
-                // re-translate status if not custom
                 if (statusText.dataset.custom === 'false') {
                     statusText.textContent = t('ready');
                 }
             });
-
-            // expose for debugging
-            window.app = { peer, conn, myId };
 
         })();
     </script>
