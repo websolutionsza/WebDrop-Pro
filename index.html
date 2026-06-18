@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>WebDrop Pro – Secure P2P File Exchange</title>
+    <!-- Font Awesome Icons (free) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        /* ----- CSS Variables (light / dark) ----- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-body: #f1f5f9;
+            --bg-container: #ffffff;
+            --bg-header: #1e293b;
+            --bg-card: #f8fafc;
+            --bg-input: #ffffff;
+            --bg-chat: #f8fafc;
+            --bg-msg-sent: #1e293b;
+            --bg-msg-recv: #e2e8f0;
+            --bg-msg-sys: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --text-light: #f8fafc;
+            --border-color: #cbd5e1;
+            --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
+            --radius: 20px;
+            --transition: 0.25s ease;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --accent-glow: rgba(37, 99, 235, 0.25);
+            --danger: #dc2626;
+            --success: #16a34a;
+            --radar-bg: #0f172a;
+            --radar-grid: rgba(37, 99, 235, 0.15);
+            --radar-sweep: rgba(37, 99, 235, 0.25);
+        }
+
+        [data-theme="dark"] {
+            --bg-body: #0f172a;
+            --bg-container: #1e293b;
+            --bg-header: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #1e293b;
+            --bg-chat: #1e293b;
+            --bg-msg-sent: #2563eb;
+            --bg-msg-recv: #334155;
+            --bg-msg-sys: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --text-light: #f8fafc;
+            --border-color: #334155;
+            --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --accent-glow: rgba(59, 130, 246, 0.3);
+            --radar-bg: #0f172a;
+            --radar-grid: rgba(59, 130, 246, 0.15);
+            --radar-sweep: rgba(59, 130, 246, 0.25);
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-body);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+            transition: background var(--transition), color var(--transition);
+            color: var(--text-primary);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 960px;
+            background: var(--bg-container);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            transition: background var(--transition), border var(--transition);
+        }
+
+        /* ----- Header ----- */
+        .header {
+            background: var(--bg-header);
+            padding: 20px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background var(--transition), border var(--transition);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-logo {
+            height: 56px;  /* increased from 42px */
+            width: auto;
+            display: block;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+
+        .header-title {
+            color: var(--text-light);
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+        .header-title small {
+            font-weight: 400;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            display: block;
+            margin-top: 2px;
+            letter-spacing: 0;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .header-controls select,
+        .header-controls input {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            transition: background var(--transition), border var(--transition), color var(--transition);
+            outline: none;
+            min-width: 120px;
+        }
+        .header-controls select:focus,
+        .header-controls input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .theme-toggle {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 8px 14px;
+            font-size: 1rem;
+            cursor: pointer;
+            color: var(--text-primary);
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .theme-toggle:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        /* ----- Content ----- */
+        .content {
+            padding: 28px;
+        }
+
+        /* ID card */
+        .id-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            border: 1px solid var(--border-color);
+            transition: background var(--transition), border var(--transition);
+        }
+
+        .id-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .avatar {
+            width: 52px;
+            height: 52px;
+            background: var(--accent);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .id-text h4 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .id-number {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .id-number span {
+            font-size: 1.8rem;
+            font-weight: 700;
+            font-family: 'Menlo', monospace;
+            color: var(--accent);
+            letter-spacing: 1px;
+        }
+        .copy-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 10px;
+            transition: all var(--transition);
+        }
+        .copy-btn:hover {
+            background: var(--accent-glow);
+            color: var(--accent);
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--success);
+            color: #fff;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .status-badge i {
+            font-size: 0.7rem;
+        }
+        .status-badge .pulse {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        /* Radar */
+        .radar-section {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: background var(--transition), border var(--transition);
+        }
+
+        .radar-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+        }
+        .radar-title i {
+            font-size: 1.4rem;
+            color: var(--accent);
+        }
+
+        .radar-wrapper {
+            position: relative;
+            width: 240px;
+            height: 240px;
+            margin: 0 auto;
+            border-radius: 50%;
+            background: var(--radar-bg);
+            border: 2px solid var(--accent);
+            overflow: hidden;
+            box-shadow: 0 0 0 4px var(--accent-glow);
+        }
+
+        .radar-grid {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(90deg, var(--radar-grid) 1px, transparent 1px),
+                linear-gradient(180deg, var(--radar-grid) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .radar-sweep {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 120px;
+            height: 120px;
+            background: conic-gradient(from 0deg, transparent 70%, var(--radar-sweep) 100%);
+            transform-origin: 0 0;
+            animation: sweep 3s linear infinite;
+            filter: blur(4px);
+        }
+        @keyframes sweep {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .radar-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 24px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 30px var(--accent);
+            z-index: 2;
+        }
+
+        .radar-device {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: var(--success);
+            border-radius: 50%;
+            z-index: 3;
+            animation: blip 1.5s infinite;
+            box-shadow: 0 0 20px var(--success);
+        }
+        @keyframes blip {
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.6);
+                opacity: 0.6;
+            }
+        }
+
+        .peers-count {
+            margin-top: 16px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Connection panel */
+        .connection-panel {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+            transition: background var(--transition), border var(--transition);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .input-group input {
+            flex: 1;
+            min-width: 160px;
+            padding: 12px 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 40px;
+            font-size: 1rem;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            transition: all var(--transition);
+            outline: none;
+        }
+        .input-group input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 8px 18px -6px var(--accent-glow);
+        }
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -8px var(--accent-glow);
+        }
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #b91c1c;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #15803d;
+            transform: translateY(-2px);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+        .btn-outline:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .status-text {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 14px;
+            padding: 8px;
+            background: var(--bg-body);
+            border-radius: 30px;
+            transition: background var(--transition);
+        }
+
+        /* Transfer area (hidden by default) */
+        .transfer-area {
+            display: none;
+        }
+
+        .peer-info {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            border: 1px solid var(--border-color);
+            transition: background var(--transition), border var(--transition);
+        }
+
+        .peer-badge {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .peer-badge i {
+            width: 40px;
+            height: 40px;
+            background: var(--accent);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.2rem;
+        }
+        .peer-badge h4 {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+        .peer-badge span {
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        /* File actions */
+        .file-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .file-btn {
+            background: var(--bg-card);
+            border: 1px dashed var(--border-color);
+            border-radius: 16px;
+            padding: 20px 12px;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        .file-btn:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+            transform: translateY(-2px);
+        }
+        .file-btn i {
+            font-size: 2rem;
+            color: var(--accent);
+        }
+        .file-btn span {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .file-btn input {
+            display: none;
+        }
+
+        /* Chat */
+        .chat-area {
+            background: var(--bg-card);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            transition: background var(--transition), border var(--transition);
+        }
+
+        .chat-header {
+            background: var(--bg-body);
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .chat-header i {
+            color: var(--accent);
+        }
+
+        .chat-messages {
+            height: 280px;
+            overflow-y: auto;
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: var(--bg-chat);
+            transition: background var(--transition);
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 10px 16px;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            word-wrap: break-word;
+            animation: fadeIn 0.25s;
+            line-height: 1.5;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.sent {
+            background: var(--bg-msg-sent);
+            color: var(--text-light);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .message.received {
+            background: var(--bg-msg-recv);
+            color: var(--text-primary);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .message.system {
+            background: var(--bg-msg-sys);
+            color: var(--text-muted);
+            align-self: center;
+            font-size: 0.8rem;
+            font-style: italic;
+            max-width: 70%;
+            text-align: center;
+            border-radius: 30px;
+            padding: 6px 18px;
+        }
+
+        .file-attachment {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .file-attachment a {
+            color: inherit;
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .file-preview {
+            max-width: 100%;
+            border-radius: 10px;
+            margin-top: 8px;
+            max-height: 180px;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 14px 18px;
+            background: var(--bg-body);
+            border-top: 1px solid var(--border-color);
+            gap: 10px;
+            transition: background var(--transition), border var(--transition);
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 40px;
+            font-size: 0.95rem;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            transition: all var(--transition);
+            outline: none;
+        }
+        .chat-input input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .chat-input button {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 40px;
+            background: var(--accent);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .chat-input button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 18px 28px;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: var(--bg-card);
+            transition: background var(--transition), border var(--transition);
+        }
+        .footer a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color var(--transition);
+        }
+        .footer a:hover {
+            color: var(--accent-hover);
+            text-decoration: underline;
+        }
+
+        /* Loading spinner */
+        .loading {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid var(--border-color);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .header-left {
+                justify-content: center;
+            }
+            .header-controls {
+                justify-content: center;
+            }
+            .header-controls select,
+            .header-controls input {
+                min-width: 100px;
+                flex: 1;
+            }
+            .id-card {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .id-info {
+                justify-content: center;
+            }
+            .status-badge {
+                justify-content: center;
+            }
+            .peer-info {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .peer-badge {
+                justify-content: center;
+            }
+            .file-actions {
+                grid-template-columns: 1fr 1fr;
+            }
+            .chat-messages {
+                height: 200px;
+            }
+            .radar-wrapper {
+                width: 180px;
+                height: 180px;
+            }
+            .radar-sweep {
+                width: 90px;
+                height: 90px;
+            }
+            .radar-center {
+                width: 18px;
+                height: 18px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .file-actions {
+                grid-template-columns: 1fr;
+            }
+            .input-group input {
+                min-width: 120px;
+            }
+            .btn {
+                padding: 10px 18px;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="appContainer">
+        <!-- ===== HEADER ===== -->
+        <header class="header">
+            <div class="header-left">
+                <!-- logo (updated URL and enlarged via CSS) -->
+                <img class="header-logo" src="https://iili.io/CxcDCDx.png" alt="WebDrop Pro" />
+                <div class="header-title">
+                    WebDrop Pro
+                    <small>P2P · encrypted</small>
+                </div>
+            </div>
+            <div class="header-controls">
+                <!-- Device name -->
+                <input type="text" id="deviceNameInput" placeholder="Device name" value="My Device" maxlength="20" />
+                <!-- Language selector -->
+                <select id="langSelect">
+                    <option value="en">🇬🇧 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="fr">🇫🇷 Français</option>
+                    <option value="de">🇩🇪 Deutsch</option>
+                    <option value="pt">🇵🇹 Português</option>
+                    <option value="zh">🇨🇳 中文</option>
+                </select>
+                <!-- Dark mode toggle -->
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- ===== CONTENT ===== -->
+        <div class="content">
+
+            <!-- Setup Area -->
+            <div id="setupArea">
+                <!-- ID Card -->
+                <div class="id-card">
+                    <div class="id-info">
+                        <div class="avatar" id="avatarDisplay">DV</div>
+                        <div class="id-text">
+                            <h4 data-i18n="deviceId">Your Device ID</h4>
+                            <div class="id-number">
+                                <span id="myIdDisplay">----</span>
+                                <button class="copy-btn" id="copyIdBtn" title="Copy ID">
+                                    <i class="far fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="status-badge">
+                        <span class="pulse"></span>
+                        <span data-i18n="active">Active</span>
+                    </div>
+                </div>
+
+                <!-- Radar -->
+                <div class="radar-section">
+                    <div class="radar-title">
+                        <i class="fas fa-satellite-dish"></i>
+                        <h3 data-i18n="networkScanner">Network Scanner</h3>
+                    </div>
+                    <div class="radar-wrapper" id="radarWrapper">
+                        <div class="radar-grid"></div>
+                        <div class="radar-sweep"></div>
+                        <div class="radar-center"></div>
+                    </div>
+                    <div class="peers-count" id="peersCount">0 peers online</div>
+                </div>
+
+                <!-- Connection Panel -->
+                <div class="connection-panel">
+                    <div class="input-group">
+                        <input type="text" id="targetId" placeholder="Enter peer ID (e.g. 1234)" maxlength="10" />
+                        <button class="btn btn-primary" id="connectBtn">
+                            <i class="fas fa-link"></i> <span data-i18n="connect">Connect</span>
+                        </button>
+                    </div>
+                    <div class="status-text" id="statusText" data-i18n="ready">Ready to connect</div>
+                </div>
+            </div>
+
+            <!-- Transfer Area (hidden until connected) -->
+            <div class="transfer-area" id="transferArea">
+                <div class="peer-info">
+                    <div class="peer-badge">
+                        <i class="fas fa-user"></i>
+                        <div>
+                            <h4 data-i18n="connectedTo">Connected to:</h4>
+                            <span id="peerIdDisplay"></span>
+                        </div>
+                    </div>
+                    <button class="btn btn-danger" id="disconnectBtn">
+                        <i class="fas fa-plug"></i> <span data-i18n="disconnect">Disconnect</span>
+                    </button>
+                </div>
+
+                <!-- File Actions -->
+                <div class="file-actions">
+                    <label class="file-btn">
+                        <i class="fas fa-file-alt"></i>
+                        <span data-i18n="sendDocument">Send Document</span>
+                        <input type="file" id="fileInput" multiple />
+                    </label>
+                    <label class="file-btn">
+                        <i class="fas fa-image"></i>
+                        <span data-i18n="sendImages">Send Images</span>
+                        <input type="file" id="imageInput" accept="image/*" multiple />
+                    </label>
+                    <label class="file-btn">
+                        <i class="fas fa-video"></i>
+                        <span data-i18n="sendVideo">Send Video</span>
+                        <input type="file" id="videoInput" accept="video/*" />
+                    </label>
+                    <label class="file-btn">
+                        <i class="fas fa-folder"></i>
+                        <span data-i18n="sendFolder">Send Folder</span>
+                        <input type="file" id="folderInput" webkitdirectory />
+                    </label>
+                </div>
+
+                <!-- Chat -->
+                <div class="chat-area">
+                    <div class="chat-header">
+                        <i class="fas fa-comment-dots"></i>
+                        <span data-i18n="secureChat">Secure Chat</span>
+                    </div>
+                    <div class="chat-messages" id="chatBox"></div>
+                    <div class="chat-input">
+                        <input type="text" id="msgInput" placeholder="Type a message..." />
+                        <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== FOOTER ===== -->
+        <div class="footer">
+            &copy; <span id="footerYear">2026</span> WebDrop Pro. All rights reserved.
+            <br />
+            Website developed by:
+            <a href="https://websolutionsza.github.io/websolutionsSA/" target="_blank" rel="noopener">WebSolutionsSA</a>
+        </div>
+    </div>
+
+    <!-- ===== PEERJS ===== -->
+    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js">
+    </script>
+
+    <!-- ===== MAIN APP ===== -->
+    <script>
+        (function() {
+            'use strict';
+
+            // ---------- i18n ----------
+            const i18n = {
+                en: {
+                    deviceId: 'Your Device ID',
+                    active: 'Active',
+                    networkScanner: 'Network Scanner',
+                    connect: 'Connect',
+                    ready: 'Ready to connect',
+                    connectedTo: 'Connected to:',
+                    disconnect: 'Disconnect',
+                    sendDocument: 'Send Document',
+                    sendImages: 'Send Images',
+                    sendVideo: 'Send Video',
+                    sendFolder: 'Send Folder',
+                    secureChat: 'Secure Chat',
+                    systemConnected: '🔒 Secure connection established',
+                    systemClosed: 'Connection closed',
+                    systemSending: 'Sending {name}...',
+                    systemSent: '✅ Sent: {name}',
+                    systemFolder: '📁 Sending folder: {name} ({count} files)',
+                    systemFolderSent: '✅ Folder sent: {name}',
+                    systemError: '❌ Error sending {name}',
+                    systemJava: '📦 Java processed: {name}',
+                    fileDownload: 'Download',
+                    connecting: 'Connecting...',
+                    connected: 'Connected successfully',
+                    failed: 'Connection failed',
+                    peerJoined: 'Peer joined',
+                },
+                es: {
+                    deviceId: 'Tu ID de dispositivo',
+                    active: 'Activo',
+                    networkScanner: 'Escáner de red',
+                    connect: 'Conectar',
+                    ready: 'Listo para conectar',
+                    connectedTo: 'Conectado a:',
+                    disconnect: 'Desconectar',
+                    sendDocument: 'Enviar documento',
+                    sendImages: 'Enviar imágenes',
+                    sendVideo: 'Enviar video',
+                    sendFolder: 'Enviar carpeta',
+                    secureChat: 'Chat seguro',
+                    systemConnected: '🔒 Conexión segura establecida',
+                    systemClosed: 'Conexión cerrada',
+                    systemSending: 'Enviando {name}...',
+                    systemSent: '✅ Enviado: {name}',
+                    systemFolder: '📁 Enviando carpeta: {name} ({count} archivos)',
+                    systemFolderSent: '✅ Carpeta enviada: {name}',
+                    systemError: '❌ Error al enviar {name}',
+                    systemJava: '📦 Procesado con Java: {name}',
+                    fileDownload: 'Descargar',
+                    connecting: 'Conectando...',
+                    connected: 'Conectado exitosamente',
+                    failed: 'Conexión fallida',
+                    peerJoined: 'Usuario conectado',
+                },
+                fr: {
+                    deviceId: 'Votre ID d\'appareil',
+                    active: 'Actif',
+                    networkScanner: 'Scanner réseau',
+                    connect: 'Connecter',
+                    ready: 'Prêt à connecter',
+                    connectedTo: 'Connecté à :',
+                    disconnect: 'Déconnecter',
+                    sendDocument: 'Envoyer un document',
+                    sendImages: 'Envoyer des images',
+                    sendVideo: 'Envoyer une vidéo',
+                    sendFolder: 'Envoyer un dossier',
+                    secureChat: 'Chat sécurisé',
+                    systemConnected: '🔒 Connexion sécurisée établie',
+                    systemClosed: 'Connexion fermée',
+                    systemSending: 'Envoi de {name}...',
+                    systemSent: '✅ Envoyé : {name}',
+                    systemFolder: '📁 Envoi du dossier : {name} ({count} fichiers)',
+                    systemFolderSent: '✅ Dossier envoyé : {name}',
+                    systemError: '❌ Erreur lors de l\'envoi de {name}',
+                    systemJava: '📦 Traité par Java : {name}',
+                    fileDownload: 'Télécharger',
+                    connecting: 'Connexion...',
+                    connected: 'Connecté avec succès',
+                    failed: 'Échec de la connexion',
+                    peerJoined: 'Utilisateur connecté',
+                },
+                de: {
+                    deviceId: 'Ihre Geräte-ID',
+                    active: 'Aktiv',
+                    networkScanner: 'Netzwerk-Scanner',
+                    connect: 'Verbinden',
+                    ready: 'Bereit zum Verbinden',
+                    connectedTo: 'Verbunden mit:',
+                    disconnect: 'Trennen',
+                    sendDocument: 'Dokument senden',
+                    sendImages: 'Bilder senden',
+                    sendVideo: 'Video senden',
+                    sendFolder: 'Ordner senden',
+                    secureChat: 'Sicherer Chat',
+                    systemConnected: '🔒 Sichere Verbindung hergestellt',
+                    systemClosed: 'Verbindung geschlossen',
+                    systemSending: 'Sende {name}...',
+                    systemSent: '✅ Gesendet: {name}',
+                    systemFolder: '📁 Sende Ordner: {name} ({count} Dateien)',
+                    systemFolderSent: '✅ Ordner gesendet: {name}',
+                    systemError: '❌ Fehler beim Senden von {name}',
+                    systemJava: '📦 Java-verarbeitet: {name}',
+                    fileDownload: 'Herunterladen',
+                    connecting: 'Verbinde...',
+                    connected: 'Erfolgreich verbunden',
+                    failed: 'Verbindung fehlgeschlagen',
+                    peerJoined: 'Teilnehmer verbunden',
+                },
+                pt: {
+                    deviceId: 'Seu ID de dispositivo',
+                    active: 'Ativo',
+                    networkScanner: 'Scanner de rede',
+                    connect: 'Conectar',
+                    ready: 'Pronto para conectar',
+                    connectedTo: 'Conectado a:',
+                    disconnect: 'Desconectar',
+                    sendDocument: 'Enviar documento',
+                    sendImages: 'Enviar imagens',
+                    sendVideo: 'Enviar vídeo',
+                    sendFolder: 'Enviar pasta',
+                    secureChat: 'Chat seguro',
+                    systemConnected: '🔒 Conexão segura estabelecida',
+                    systemClosed: 'Conexão encerrada',
+                    systemSending: 'Enviando {name}...',
+                    systemSent: '✅ Enviado: {name}',
+                    systemFolder: '📁 Enviando pasta: {name} ({count} arquivos)',
+                    systemFolderSent: '✅ Pasta enviada: {name}',
+                    systemError: '❌ Erro ao enviar {name}',
+                    systemJava: '📦 Processado por Java: {name}',
+                    fileDownload: 'Baixar',
+                    connecting: 'Conectando...',
+                    connected: 'Conectado com sucesso',
+                    failed: 'Falha na conexão',
+                    peerJoined: 'Usuário conectado',
+                },
+                zh: {
+                    deviceId: '您的设备ID',
+                    active: '活跃',
+                    networkScanner: '网络扫描仪',
+                    connect: '连接',
+                    ready: '准备连接',
+                    connectedTo: '已连接到：',
+                    disconnect: '断开连接',
+                    sendDocument: '发送文档',
+                    sendImages: '发送图片',
+                    sendVideo: '发送视频',
+                    sendFolder: '发送文件夹',
+                    secureChat: '安全聊天',
+                    systemConnected: '🔒 安全连接已建立',
+                    systemClosed: '连接已关闭',
+                    systemSending: '正在发送 {name}...',
+                    systemSent: '✅ 已发送：{name}',
+                    systemFolder: '📁 正在发送文件夹：{name}（{count} 个文件）',
+                    systemFolderSent: '✅ 文件夹已发送：{name}',
+                    systemError: '❌ 发送 {name} 时出错',
+                    systemJava: '📦 Java 已处理：{name}',
+                    fileDownload: '下载',
+                    connecting: '连接中...',
+                    connected: '连接成功',
+                    failed: '连接失败',
+                    peerJoined: '用户已加入',
+                }
+            };
+
+            let currentLang = 'en';
+
+            function t(key, vars) {
+                let str = i18n[currentLang]?.[key] || i18n.en[key] || key;
+                if (vars) {
+                    for (const [k, v] of Object.entries(vars)) {
+                        str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
+                    }
+                }
+                return str;
+            }
+
+            function updateUI() {
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    el.textContent = t(key);
+                });
+                // placeholders
+                const ph = document.getElementById('targetId');
+                if (ph) ph.placeholder = t('connect') + ' ID...';
+                const msgPh = document.getElementById('msgInput');
+                if (msgPh) msgPh.placeholder = t('secureChat') + '...';
+                const st = document.getElementById('statusText');
+                if (st && !st.dataset.custom) st.textContent = t('ready');
+            }
+
+            document.getElementById('langSelect').addEventListener('change', function() {
+                currentLang = this.value;
+                updateUI();
+                // re-translate dynamic messages if needed
+            });
+
+            // ---------- Theme ----------
+            const themeToggle = document.getElementById('themeToggle');
+            const container = document.getElementById('appContainer');
+            let dark = false;
+
+            function setTheme(darkMode) {
+                dark = darkMode;
+                container.setAttribute('data-theme', dark ? 'dark' : 'light');
+                themeToggle.innerHTML = dark ?
+                    '<i class="fas fa-sun"></i>' :
+                    '<i class="fas fa-moon"></i>';
+                localStorage.setItem('webdrop-theme', dark ? 'dark' : 'light');
+            }
+
+            const saved = localStorage.getItem('webdrop-theme');
+            if (saved === 'dark') setTheme(true);
+            else if (saved === 'light') setTheme(false);
+            else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme(true);
+
+            themeToggle.addEventListener('click', () => setTheme(!dark));
+
+            // ---------- Footer year ----------
+            document.getElementById('footerYear').textContent = new Date().getFullYear();
+
+            // ---------- Device name ----------
+            const deviceNameInput = document.getElementById('deviceNameInput');
+            const avatarDisplay = document.getElementById('avatarDisplay');
+
+            function updateAvatar() {
+                const name = deviceNameInput.value.trim() || 'Device';
+                const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+                avatarDisplay.textContent = initials || 'DV';
+                // also update peer name if needed
+            }
+            deviceNameInput.addEventListener('input', updateAvatar);
+            // load saved name
+            const savedName = localStorage.getItem('webdrop-deviceName');
+            if (savedName) {
+                deviceNameInput.value = savedName;
+                updateAvatar();
+            }
+            deviceNameInput.addEventListener('change', function() {
+                localStorage.setItem('webdrop-deviceName', this.value.trim() || 'My Device');
+                updateAvatar();
+            });
+
+            // ---------- PeerJS App ----------
+            const myIdDisplay = document.getElementById('myIdDisplay');
+            const copyIdBtn = document.getElementById('copyIdBtn');
+            const targetIdInput = document.getElementById('targetId');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const statusText = document.getElementById('statusText');
+            const setupArea = document.getElementById('setupArea');
+            const transferArea = document.getElementById('transferArea');
+            const peerIdDisplay = document.getElementById('peerIdDisplay');
+            const chatBox = document.getElementById('chatBox');
+            const msgInput = document.getElementById('msgInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const fileInput = document.getElementById('fileInput');
+            const imageInput = document.getElementById('imageInput');
+            const videoInput = document.getElementById('videoInput');
+            const folderInput = document.getElementById('folderInput');
+            const peersCount = document.getElementById('peersCount');
+            const radarWrapper = document.getElementById('radarWrapper');
+
+            let peer = null;
+            let conn = null;
+            let myId = '';
+
+            // ---------- Helpers ----------
+            function addMessage(sender, text, type) {
+                const div = document.createElement('div');
+                div.className = `message ${type}`;
+                if (type === 'system') {
+                    div.textContent = text;
+                } else {
+                    div.innerHTML = `<strong>${sender}:</strong> ${text}`;
+                }
+                chatBox.appendChild(div);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            function systemMessage(key, vars) {
+                addMessage('System', t(key, vars), 'system');
+            }
+
+            function scrollToBottom() {
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            function resetUI() {
+                conn = null;
+                setupArea.style.display = 'block';
+                transferArea.style.display = 'none';
+                targetIdInput.value = '';
+                statusText.textContent = t('ready');
+                statusText.dataset.custom = 'false';
+                statusText.style.color = '';
+                chatBox.innerHTML = '';
+                // stop radar simulation? we keep it running
+            }
+
+            function showTransferUI(peerId) {
+                setupArea.style.display = 'none';
+                transferArea.style.display = 'block';
+                peerIdDisplay.textContent = peerId;
+                chatBox.innerHTML = '';
+            }
+
+            // ---------- Radar simulation ----------
+            let radarInterval = null;
+
+            function startRadar() {
+                if (radarInterval) return;
+                radarInterval = setInterval(() => {
+                    if (conn) {
+                        // if connected, show only the connected peer as a single dot?
+                        // keep it simple: remove all and add one
+                        const existing = radarWrapper.querySelectorAll('.radar-device');
+                        existing.forEach(el => el.remove());
+                        const d = document.createElement('div');
+                        d.className = 'radar-device';
+                        d.style.left = '50%';
+                        d.style.top = '50%';
+                        d.style.transform = 'translate(-50%, -50%)';
+                        d.style.background = 'var(--accent)';
+                        d.style.boxShadow = '0 0 30px var(--accent)';
+                        radarWrapper.appendChild(d);
+                        peersCount.textContent = '1 peer online';
+                        return;
+                    }
+                    // random devices
+                    const existing = radarWrapper.querySelectorAll('.radar-device');
+                    existing.forEach(el => el.remove());
+                    const count = Math.floor(Math.random() * 4);
+                    peersCount.textContent = `${count} peer${count !== 1 ? 's' : ''} online`;
+                    for (let i = 0; i < count; i++) {
+                        const d = document.createElement('div');
+                        d.className = 'radar-device';
+                        const angle = Math.random() * 2 * Math.PI;
+                        const dist = 50 + Math.random() * 70;
+                        const cx = 120,
+                            cy = 120; // center of 240px radar
+                        const x = cx + dist * Math.cos(angle);
+                        const y = cy + dist * Math.sin(angle);
+                        d.style.left = x + 'px';
+                        d.style.top = y + 'px';
+                        radarWrapper.appendChild(d);
+                    }
+                }, 2500);
+            }
+            startRadar();
+
+            // ---------- Peer init ----------
+            function initPeer() {
+                myId = Math.floor(1000 + Math.random() * 9000).toString();
+                myIdDisplay.textContent = myId;
+
+                peer = new Peer(myId, {
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    }
+                });
+
+                peer.on('open', (id) => {
+                    console.log('Peer open:', id);
+                    statusText.textContent = t('ready');
+                });
+
+                peer.on('connection', (incoming) => {
+                    if (conn) {
+                        incoming.close();
+                        return;
+                    }
+                    conn = incoming;
+                    conn.on('open', () => {
+                        showTransferUI(conn.peer);
+                        systemMessage('systemConnected');
+                    });
+                    conn.on('data', (data) => handleIncomingData(data));
+                    conn.on('close', () => {
+                        systemMessage('systemClosed');
+                        resetUI();
+                    });
+                    conn.on('error', (err) => {
+                        console.error('conn error:', err);
+                        statusText.textContent = t('failed');
+                        statusText.style.color = 'var(--danger)';
+                    });
+                });
+
+                peer.on('error', (err) => {
+                    console.error('peer error:', err);
+                    if (err.type === 'unavailable-id') {
+                        // retry with new id
+                        myId = Math.floor(1000 + Math.random() * 9000).toString();
+                        myIdDisplay.textContent = myId;
+                        peer.destroy();
+                        initPeer();
+                    } else {
+                        statusText.textContent = t('failed');
+                        statusText.style.color = 'var(--danger)';
+                    }
+                });
+            }
+
+            // ---------- Connect to peer ----------
+            function connectToPeer(targetId) {
+                if (!peer) return;
+                if (conn) {
+                    conn.close();
+                    resetUI();
+                }
+                statusText.innerHTML = `<span class="loading"></span> ${t('connecting')}`;
+                statusText.dataset.custom = 'true';
+                statusText.style.color = '';
+
+                const target = targetId.trim();
+                if (!target) {
+                    statusText.textContent = t('failed');
+                    statusText.style.color = 'var(--danger)';
+                    return;
+                }
+
+                conn = peer.connect(target);
+                conn.on('open', () => {
+                    showTransferUI(conn.peer);
+                    systemMessage('systemConnected');
+                    statusText.textContent = t('connected');
+                    statusText.dataset.custom = 'false';
+                });
+                conn.on('data', (data) => handleIncomingData(data));
+                conn.on('close', () => {
+                    systemMessage('systemClosed');
+                    resetUI();
+                });
+                conn.on('error', (err) => {
+                    console.error('connect error:', err);
+                    statusText.textContent = t('failed');
+                    statusText.style.color = 'var(--danger)';
+                    conn = null;
+                });
+            }
+
+            // ---------- Handle incoming data ----------
+            function handleIncomingData(data) {
+                if (data.type === 'text') {
+                    addMessage('Peer', data.payload, 'received');
+                } else if (data.type === 'file' || data.type === 'java-processed') {
+                    receiveFile(data);
+                } else if (data.type === 'system') {
+                    systemMessage(data.payload);
+                }
+            }
+
+            // ---------- Receive file ----------
+            function receiveFile(data) {
+                let blob;
+                const payload = data.payload;
+                if (payload && payload.data && typeof payload.data === 'string' && payload.data.includes(',')) {
+                    // data URL
+                    const byteString = atob(payload.data.split(',')[1]);
+                    const ab = new ArrayBuffer(byteString.length);
+                    const ia = new Uint8Array(ab);
+                    for (let i = 0; i < byteString.length; i++) {
+                        ia[i] = byteString.charCodeAt(i);
+                    }
+                    blob = new Blob([ab], { type: data.filetype || 'application/octet-stream' });
+                } else if (payload instanceof Blob) {
+                    blob = payload;
+                } else if (payload instanceof ArrayBuffer) {
+                    blob = new Blob([payload], { type: data.filetype || 'application/octet-stream' });
+                } else {
+                    // fallback
+                    blob = new Blob([payload], { type: data.filetype || 'application/octet-stream' });
+                }
+
+                const url = URL.createObjectURL(blob);
+                const filename = data.filename || 'file';
+
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'message received';
+
+                const info = document.createElement('div');
+                info.innerHTML = `<strong><i class="fas fa-paperclip"></i> ${filename}</strong>`;
+                if (data.filesize) {
+                    const size = (data.filesize / 1024).toFixed(1);
+                    info.innerHTML += `<div style="font-size:0.75rem;color:var(--text-muted);">${size} KB</div>`;
+                }
+                msgDiv.appendChild(info);
+
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.className = 'btn btn-success';
+                link.style.cssText = 'margin-top:8px;padding:6px 16px;font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;';
+                link.innerHTML = `<i class="fas fa-download"></i> ${t('fileDownload')}`;
+                msgDiv.appendChild(link);
+
+                // preview
+                if (data.filetype && data.filetype.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.className = 'file-preview';
+                    img.style.maxHeight = '160px';
+                    msgDiv.appendChild(img);
+                } else if (data.filetype && data.filetype.startsWith('video/')) {
+                    const vid = document.createElement('video');
+                    vid.src = url;
+                    vid.controls = true;
+                    vid.className = 'file-preview';
+                    vid.style.maxHeight = '160px';
+                    msgDiv.appendChild(vid);
+                }
+
+                chatBox.appendChild(msgDiv);
+                scrollToBottom();
+            }
+
+            // ---------- Send file ----------
+            function sendFile(file, metadata) {
+                if (!conn) return;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const data = e.target.result;
+                    let payload = data;
+                    if (typeof data === 'string' && data.startsWith('data:')) {
+                        // keep as data URL
+                    } else if (data instanceof ArrayBuffer) {
+                        // convert to base64 for simplicity
+                        const bytes = new Uint8Array(data);
+                        let binary = '';
+                        for (let i = 0; i < bytes.length; i++) {
+                            binary += String.fromCharCode(bytes[i]);
+                        }
+                        payload = btoa(binary);
+                        // wrap as data URL
+                        payload = `data:${file.type};base64,${payload}`;
+                    }
+                    conn.send({
+                        type: 'file',
+                        filename: file.name,
+                        filetype: file.type,
+                        filesize: file.size,
+                        payload: payload,
+                        metadata: metadata || {}
+                    });
+                    systemMessage('systemSent', { name: file.name });
+                };
+                reader.onerror = function() {
+                    systemMessage('systemError', { name: file.name });
+                };
+                if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+                    reader.readAsDataURL(file);
+                } else {
+                    reader.readAsArrayBuffer(file);
+                }
+            }
+
+            // ---------- File input handlers ----------
+            function handleFiles(files, label) {
+                if (!conn) return;
+                if (!files.length) return;
+                for (const file of files) {
+                    systemMessage('systemSending', { name: file.name });
+                    sendFile(file, { label: label || 'file' });
+                }
+            }
+
+            fileInput.addEventListener('change', function(e) {
+                handleFiles(e.target.files, 'document');
+                this.value = '';
+            });
+            imageInput.addEventListener('change', function(e) {
+                handleFiles(e.target.files, 'image');
+                this.value = '';
+            });
+            videoInput.addEventListener('change', function(e) {
+                handleFiles(e.target.files, 'video');
+                this.value = '';
+            });
+            folderInput.addEventListener('change', function(e) {
+                const files = e.target.files;
+                if (!files.length || !conn) return;
+                const folderName = files[0].webkitRelativePath.split('/')[0];
+                systemMessage('systemFolder', { name: folderName, count: files.length });
+                // send each file with path
+                for (const file of files) {
+                    const relPath = file.webkitRelativePath;
+                    // we'll send as separate files with path in filename
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        let payload = ev.target.result;
+                        if (typeof payload === 'string' && payload.startsWith('data:')) {
+                            // ok
+                        } else if (payload instanceof ArrayBuffer) {
+                            const bytes = new Uint8Array(payload);
+                            let binary = '';
+                            for (let i = 0; i < bytes.length; i++) {
+                                binary += String.fromCharCode(bytes[i]);
+                            }
+                            payload = `data:${file.type};base64,${btoa(binary)}`;
+                        }
+                        conn.send({
+                            type: 'file',
+                            filename: relPath,
+                            filetype: file.type,
+                            filesize: file.size,
+                            payload: payload,
+                            metadata: { folder: true }
+                        });
+                    };
+                    if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+                        reader.readAsDataURL(file);
+                    } else {
+                        reader.readAsArrayBuffer(file);
+                    }
+                }
+                systemMessage('systemFolderSent', { name: folderName });
+                this.value = '';
+            });
+
+            // ---------- Send message ----------
+            function sendMessage() {
+                const text = msgInput.value.trim();
+                if (!text || !conn) return;
+                conn.send({ type: 'text', payload: text });
+                addMessage('Me', text, 'sent');
+                msgInput.value = '';
+            }
+
+            sendBtn.addEventListener('click', sendMessage);
+            msgInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+
+            // ---------- Connect / Disconnect ----------
+            connectBtn.addEventListener('click', function() {
+                const target = targetIdInput.value.trim();
+                if (target) connectToPeer(target);
+            });
+
+            disconnectBtn.addEventListener('click', function() {
+                if (conn) {
+                    conn.close();
+                    resetUI();
+                    systemMessage('systemClosed');
+                }
+            });
+
+            // ---------- Copy ID ----------
+            copyIdBtn.addEventListener('click', function() {
+                const id = myIdDisplay.textContent;
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(id).then(() => {
+                        const orig = this.innerHTML;
+                        this.innerHTML = '<i class="fas fa-check"></i>';
+                        setTimeout(() => { this.innerHTML = orig; }, 1500);
+                    }).catch(() => {});
+                } else {
+                    // fallback
+                    const ta = document.createElement('textarea');
+                    ta.value = id;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    ta.remove();
+                    const orig = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-check"></i>';
+                    setTimeout(() => { this.innerHTML = orig; }, 1500);
+                }
+            });
+
+            // ---------- Init ----------
+            initPeer();
+            updateUI();
+
+            // re-apply i18n on language change for dynamic elements
+            document.getElementById('langSelect').addEventListener('change', function() {
+                // re-translate status if not custom
+                if (statusText.dataset.custom === 'false') {
+                    statusText.textContent = t('ready');
+                }
+            });
+
+            // expose for debugging
+            window.app = { peer, conn, myId };
+
+        })();
+    </script>
+</body>
+</html>
