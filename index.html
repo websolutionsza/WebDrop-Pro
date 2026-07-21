@@ -631,6 +631,52 @@
             padding: 6px 18px;
         }
 
+        /* ----- NEW: Message header + content structure ----- */
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 2px;
+        }
+        .message-sender {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .message-content {
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.6;
+            margin-top: 2px;
+        }
+
+        /* Copy button for received messages */
+        .copy-msg-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            transition: all var(--transition);
+            opacity: 0.4;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .copy-msg-btn:hover {
+            opacity: 1;
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+        .copy-msg-btn.copied {
+            color: var(--success);
+            opacity: 1;
+        }
+
+        /* Keep original file-attachment styling */
         .file-attachment {
             margin-top: 8px;
             padding: 8px 12px;
@@ -1296,14 +1342,73 @@
             let myId = '';
 
             // ---------- Helpers ----------
+            // --- FIX 1: Preserve formatting + FIX 2: Add Copy button ---
             function addMessage(sender, text, type) {
                 const div = document.createElement('div');
                 div.className = `message ${type}`;
+
                 if (type === 'system') {
                     div.textContent = text;
                 } else {
-                    div.innerHTML = `<strong>${sender}:</strong> ${text}`;
+                    // Header: sender name + copy button (only for received)
+                    const header = document.createElement('div');
+                    header.className = 'message-header';
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'message-sender';
+                    nameSpan.textContent = `${sender}:`;
+                    header.appendChild(nameSpan);
+
+                    // Copy button for received messages only
+                    if (type === 'received') {
+                        const copyBtn = document.createElement('button');
+                        copyBtn.className = 'copy-msg-btn';
+                        copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                        copyBtn.title = 'Copy text';
+                        copyBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const textToCopy = text;
+                            const doCopy = function() {
+                                copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                                copyBtn.classList.add('copied');
+                                setTimeout(() => {
+                                    copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                                    copyBtn.classList.remove('copied');
+                                }, 1500);
+                            };
+                            if (navigator.clipboard) {
+                                navigator.clipboard.writeText(textToCopy).then(doCopy).catch(() => {
+                                    // fallback
+                                    const ta = document.createElement('textarea');
+                                    ta.value = textToCopy;
+                                    document.body.appendChild(ta);
+                                    ta.select();
+                                    document.execCommand('copy');
+                                    ta.remove();
+                                    doCopy();
+                                });
+                            } else {
+                                const ta = document.createElement('textarea');
+                                ta.value = textToCopy;
+                                document.body.appendChild(ta);
+                                ta.select();
+                                document.execCommand('copy');
+                                ta.remove();
+                                doCopy();
+                            }
+                        });
+                        header.appendChild(copyBtn);
+                    }
+
+                    div.appendChild(header);
+
+                    // Content: message text with preserved whitespace
+                    const content = document.createElement('div');
+                    content.className = 'message-content';
+                    content.textContent = text;
+                    div.appendChild(content);
                 }
+
                 chatBox.appendChild(div);
                 chatBox.scrollTop = chatBox.scrollHeight;
             }
@@ -1473,16 +1578,14 @@
                 }
             }
 
-            // ---------- FIXED: Receive file (robust) ----------
+            // ---------- Receive file (unchanged) ----------
             function receiveFile(data) {
                 const payload = data.payload;
-                // payload is a data URL string
                 if (typeof payload !== 'string' || !payload.startsWith('data:')) {
                     console.error('Invalid payload:', payload);
                     return;
                 }
 
-                // Use fetch to convert data URL to Blob (most reliable)
                 fetch(payload)
                     .then(res => res.blob())
                     .then(blob => {
@@ -1501,7 +1604,6 @@
                         }
                         msgDiv.appendChild(info);
 
-                        // Download link
                         const link = document.createElement('a');
                         link.href = url;
                         link.download = filename;
@@ -1510,7 +1612,6 @@
                         link.innerHTML = `<i class="fas fa-download"></i> ${t('fileDownload')}`;
                         msgDiv.appendChild(link);
 
-                        // Preview for images/videos
                         if (mimeType.startsWith('image/')) {
                             const img = document.createElement('img');
                             img.src = url;
@@ -1535,7 +1636,7 @@
                     });
             }
 
-            // ---------- Send file (always data URL) ----------
+            // ---------- Send file (unchanged) ----------
             function sendFile(file, metadata) {
                 if (!conn) return;
                 const reader = new FileReader();
@@ -1557,7 +1658,7 @@
                 reader.readAsDataURL(file);
             }
 
-            // ---------- File input handlers ----------
+            // ---------- File input handlers (unchanged) ----------
             function handleFiles(files, label) {
                 if (!conn) return;
                 if (!files.length) return;
