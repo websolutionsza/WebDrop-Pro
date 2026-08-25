@@ -298,10 +298,50 @@
             gap: 10px;
             margin-bottom: 20px;
             color: var(--text-secondary);
+            position: relative;
         }
         .radar-title i {
             font-size: 1.6rem;
             color: var(--accent);
+        }
+
+        /* Refresh button */
+        .refresh-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            width: 36px;
+            height: 36px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .refresh-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+        .refresh-btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .refresh-btn.spinning i {
+            animation: spin-refresh 0.8s linear infinite;
+        }
+        @keyframes spin-refresh {
+            to { transform: rotate(360deg); }
         }
 
         .radar-wrapper {
@@ -903,6 +943,7 @@
             }
         }
     </style>
+<base target="_blank">
 </head>
 <body>
     <div id="app">
@@ -961,6 +1002,9 @@
                     <div class="radar-title">
                         <i class="fas fa-satellite-dish"></i>
                         <h3 data-i18n="networkScanner">Network Scanner</h3>
+                        <button class="refresh-btn" id="refreshBtn" aria-label="Refresh connection" title="Refresh connection">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
                     <div class="radar-wrapper" id="radarWrapper">
                         <div class="radar-grid"></div>
@@ -1336,6 +1380,7 @@
             const folderInput = document.getElementById('folderInput');
             const peersCount = document.getElementById('peersCount');
             const radarWrapper = document.getElementById('radarWrapper');
+            const refreshBtn = document.getElementById('refreshBtn');
 
             let peer = null;
             let conn = null;
@@ -1473,6 +1518,53 @@
                 }, 2500);
             }
             startRadar();
+
+            // ---------- Refresh / Reconnect ----------
+            function refreshConnection() {
+                if (refreshBtn.disabled) return;
+
+                refreshBtn.disabled = true;
+                refreshBtn.classList.add('spinning');
+
+                // Close any active connection
+                if (conn) {
+                    conn.close();
+                    conn = null;
+                }
+
+                // Tear down existing peer
+                if (peer) {
+                    peer.destroy();
+                    peer = null;
+                }
+
+                // Reset UI to initial state
+                resetUI();
+
+                // Clear radar immediately
+                radarWrapper.querySelectorAll('.radar-device').forEach(el => el.remove());
+                peersCount.textContent = '0 peers online';
+
+                // Brief delay to let PeerJS clean up, then re-init
+                setTimeout(() => {
+                    initPeer();
+
+                    // Restart radar simulation
+                    if (radarInterval) {
+                        clearInterval(radarInterval);
+                        radarInterval = null;
+                    }
+                    startRadar();
+
+                    // Stop spinning after a satisfying animation
+                    setTimeout(() => {
+                        refreshBtn.classList.remove('spinning');
+                        refreshBtn.disabled = false;
+                    }, 900);
+                }, 400);
+            }
+
+            refreshBtn.addEventListener('click', refreshConnection);
 
             // ---------- Peer init ----------
             function initPeer() {
