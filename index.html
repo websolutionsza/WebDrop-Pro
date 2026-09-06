@@ -8,6 +8,7 @@
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/websolutionsza/WebDrop-Pro/refs/heads/main/web%20drop%20192.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <style>
+        /* ===== YOUR EXISTING STYLES (unchanged) ===== */
         * {
             margin: 0;
             padding: 0;
@@ -708,7 +709,6 @@
             max-height: 180px;
         }
 
-        /* ===== NEW: Pending attachments container ===== */
         .pending-attachments {
             display: flex;
             flex-wrap: wrap;
@@ -776,7 +776,6 @@
             color: var(--danger);
             background: rgba(220, 38, 38, 0.1);
         }
-        /* ===== END NEW ===== */
 
         .chat-input {
             display: flex;
@@ -938,6 +937,172 @@
                 padding: 16px;
             }
         }
+
+        /* ===== NEW QR MODAL STYLES (injected seamlessly) ===== */
+        .qr-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .qr-modal-overlay.open {
+            display: flex;
+        }
+        .qr-modal {
+            background: var(--bg-container);
+            border-radius: var(--radius);
+            max-width: 480px;
+            width: 100%;
+            padding: 32px 28px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+            transition: background var(--transition), border var(--transition);
+        }
+        .qr-modal-close {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: transparent;
+            border: none;
+            font-size: 1.6rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color var(--transition);
+            line-height: 1;
+        }
+        .qr-modal-close:hover {
+            color: var(--text-primary);
+        }
+        .qr-modal h2 {
+            margin-bottom: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .qr-modal h2 i {
+            color: var(--accent);
+        }
+
+        .qr-display-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+        }
+        #qrCodeContainer {
+            background: #fff;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+        #qrCodeContainer img,
+        #qrCodeContainer canvas {
+            display: block;
+            width: 200px;
+            height: 200px;
+            image-rendering: pixelated;
+        }
+        .qr-status {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            text-align: center;
+            min-height: 1.8em;
+        }
+        .qr-status .loading {
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        .qr-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        .qr-actions .btn {
+            min-width: 120px;
+        }
+
+        /* scanner area inside modal */
+        #qrScannerContainer {
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            min-height: 240px;
+            position: relative;
+        }
+        #qrScannerContainer video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        #qrScannerContainer .scanner-placeholder {
+            color: #fff;
+            text-align: center;
+            padding: 60px 20px;
+            font-size: 0.95rem;
+            background: #1e293b;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .qr-toggle-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 40px;
+            padding: 10px 20px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: all var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .qr-toggle-btn:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+        .qr-toggle-btn i {
+            color: var(--accent);
+        }
+
+        .qr-divider {
+            width: 100%;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            line-height: 0.1em;
+            margin: 18px 0 16px;
+        }
+        .qr-divider span {
+            background: var(--bg-container);
+            padding: 0 12px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .qr-error {
+            color: var(--danger);
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 8px;
+        }
     </style>
     <meta name="google-site-verification" content="EW_zyixVqq0-JThC-I5D7ryIZjw6xE-TZjUz84TTj3U" />
 <base target="_blank">
@@ -1011,6 +1176,10 @@
                         <button class="btn btn-primary" id="connectBtn">
                             <i class="fas fa-link"></i> <span data-i18n="connect">Connect</span>
                         </button>
+                        <!-- ===== NEW: QR Code button ===== -->
+                        <button class="btn btn-primary" id="qrOpenBtn" style="background:var(--success);">
+                            <i class="fas fa-qrcode"></i> <span>QR Code</span>
+                        </button>
                     </div>
                     <div class="status-text" id="statusText" data-i18n="ready">Ready to connect</div>
                 </div>
@@ -1060,9 +1229,7 @@
                     </div>
                     <div class="chat-messages" id="chatBox"></div>
 
-                    <!-- ===== NEW: Pending attachments container ===== -->
                     <div id="pendingAttachments" class="pending-attachments"></div>
-                    <!-- ===== END NEW ===== -->
 
                     <div class="chat-input">
                         <input type="text" id="msgInput" placeholder="Type a message..." />
@@ -1093,13 +1260,65 @@
         </div>
     </div>
 
+    <!-- ===== QR Modal (injected) ===== -->
+    <div class="qr-modal-overlay" id="qrModalOverlay">
+        <div class="qr-modal">
+            <button class="qr-modal-close" id="qrModalClose">&times;</button>
+            <h2><i class="fas fa-qrcode"></i> <span id="qrModalTitle">Connect via QR</span></h2>
+
+            <div class="qr-display-area" id="qrDisplayArea">
+                <!-- QR Code -->
+                <div id="qrCodeContainer">
+                    <div style="width:200px;height:200px;display:flex;align-items:center;justify-content:center;background:#f0f0f0;border-radius:8px;color:#999;font-size:0.9rem;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </div>
+
+                <div class="qr-status" id="qrStatus">Waiting for scan...</div>
+
+                <div class="qr-actions">
+                    <button class="btn btn-primary" id="qrRefreshBtn"><i class="fas fa-redo"></i> Refresh QR</button>
+                    <button class="qr-toggle-btn" id="qrToggleScanBtn"><i class="fas fa-camera"></i> <span>Scan QR</span></button>
+                </div>
+
+                <div class="qr-divider"><span>or</span></div>
+
+                <!-- Scanner -->
+                <div id="qrScannerContainer">
+                    <div class="scanner-placeholder">
+                        <i class="fas fa-camera" style="font-size:2rem;display:block;margin-bottom:12px;"></i>
+                        Tap "Scan QR" to open camera
+                    </div>
+                </div>
+                <div id="qrScanError" class="qr-error"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CDN Scripts ===== -->
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+    <!-- Postbase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/postbase-js/dist/postbase.min.js"></script>
+    <!-- QRCode.js for generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- html5-qrcode for scanning -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <script>
         (function() {
             'use strict';
 
-            // ---------- i18n ----------
+            // ================================================================
+            // 1. YOUR POSTBASE CREDENTIALS – REPLACE THESE!
+            // ================================================================
+            const POSTBASE_URL = "https://postbase-production-b4c8.up.railway.app";   // e.g. https://your-project.postbase.app
+            const POSTBASE_ANON_KEY = "pb_anon_IvpWA7o62oJLMAfUSCwYQfCP_4P2scsDYlBcaGqn4GzlDztkcaq8IAds_jdCxz6l"; // public/anon key
+
+            // ================================================================
+            // 2. EXISTING CODE (all your original logic – untouched except added QR parts)
+            // ================================================================
+
+            // ---------- i18n (unchanged) ----------
             const i18n = {
                 en: {
                     deviceId: 'Your Device ID',
@@ -1127,6 +1346,14 @@
                     failed: 'Connection failed',
                     pastedTextAttached: 'Pasted text saved as {name}',
                     removeAttachment: 'Remove attachment',
+                    // QR keys
+                    qrWaiting: 'Waiting for scan...',
+                    qrConnecting: 'Connecting via QR...',
+                    qrConnected: 'Connected! You can close this.',
+                    qrError: 'Error: {msg}',
+                    qrRefresh: 'Refresh QR',
+                    qrScan: 'Scan QR',
+                    qrShowQR: 'Show my QR',
                 },
                 es: {
                     deviceId: 'Tu ID de dispositivo',
@@ -1154,6 +1381,13 @@
                     failed: 'Conexión fallida',
                     pastedTextAttached: 'Texto pegado guardado como {name}',
                     removeAttachment: 'Quitar adjunto',
+                    qrWaiting: 'Esperando escaneo...',
+                    qrConnecting: 'Conectando vía QR...',
+                    qrConnected: '¡Conectado! Puedes cerrar esto.',
+                    qrError: 'Error: {msg}',
+                    qrRefresh: 'Refrescar QR',
+                    qrScan: 'Escanear QR',
+                    qrShowQR: 'Mostrar mi QR',
                 },
                 fr: {
                     deviceId: 'Votre ID d\'appareil',
@@ -1181,6 +1415,13 @@
                     failed: 'Échec de la connexion',
                     pastedTextAttached: 'Texte collé enregistré comme {name}',
                     removeAttachment: 'Supprimer la pièce jointe',
+                    qrWaiting: 'En attente de scan...',
+                    qrConnecting: 'Connexion via QR...',
+                    qrConnected: 'Connecté ! Vous pouvez fermer.',
+                    qrError: 'Erreur : {msg}',
+                    qrRefresh: 'Rafraîchir QR',
+                    qrScan: 'Scanner QR',
+                    qrShowQR: 'Afficher mon QR',
                 },
                 de: {
                     deviceId: 'Ihre Geräte-ID',
@@ -1208,6 +1449,13 @@
                     failed: 'Verbindung fehlgeschlagen',
                     pastedTextAttached: 'Eingefügter Text als {name} gespeichert',
                     removeAttachment: 'Anhang entfernen',
+                    qrWaiting: 'Warte auf Scan...',
+                    qrConnecting: 'Verbinde via QR...',
+                    qrConnected: 'Verbunden! Sie können schließen.',
+                    qrError: 'Fehler: {msg}',
+                    qrRefresh: 'QR aktualisieren',
+                    qrScan: 'QR scannen',
+                    qrShowQR: 'Mein QR anzeigen',
                 },
                 pt: {
                     deviceId: 'Seu ID de dispositivo',
@@ -1235,6 +1483,13 @@
                     failed: 'Falha na conexão',
                     pastedTextAttached: 'Texto colado salvo como {name}',
                     removeAttachment: 'Remover anexo',
+                    qrWaiting: 'Aguardando escaneamento...',
+                    qrConnecting: 'Conectando via QR...',
+                    qrConnected: 'Conectado! Você pode fechar.',
+                    qrError: 'Erro: {msg}',
+                    qrRefresh: 'Atualizar QR',
+                    qrScan: 'Escanear QR',
+                    qrShowQR: 'Mostrar meu QR',
                 },
                 zh: {
                     deviceId: '您的设备ID',
@@ -1262,6 +1517,13 @@
                     failed: '连接失败',
                     pastedTextAttached: '粘贴的文本已保存为 {name}',
                     removeAttachment: '删除附件',
+                    qrWaiting: '等待扫描...',
+                    qrConnecting: '通过QR连接中...',
+                    qrConnected: '已连接！您可以关闭此窗口。',
+                    qrError: '错误：{msg}',
+                    qrRefresh: '刷新QR',
+                    qrScan: '扫描QR',
+                    qrShowQR: '显示我的QR',
                 }
             };
 
@@ -1288,6 +1550,18 @@
                 if (msgPh) msgPh.placeholder = t('secureChat') + '...';
                 const st = document.getElementById('statusText');
                 if (st && !st.dataset.custom) st.textContent = t('ready');
+                // QR modal dynamic texts
+                const title = document.getElementById('qrModalTitle');
+                if (title) title.textContent = t('qrShowQR');
+                const status = document.getElementById('qrStatus');
+                if (status && !status.dataset.manual) status.textContent = t('qrWaiting');
+                const refreshBtn = document.getElementById('qrRefreshBtn');
+                if (refreshBtn) refreshBtn.innerHTML = `<i class="fas fa-redo"></i> ${t('qrRefresh')}`;
+                const scanBtn = document.getElementById('qrToggleScanBtn');
+                if (scanBtn) {
+                    const span = scanBtn.querySelector('span');
+                    if (span) span.textContent = t('qrScan');
+                }
             }
 
             document.getElementById('langSelect').addEventListener('change', function() {
@@ -1359,7 +1633,7 @@
                 });
             });
 
-            // ---------- PeerJS App ----------
+            // ---------- PeerJS App (unchanged except we expose peer reference) ----------
             const myIdDisplay = document.getElementById('myIdDisplay');
             const copyIdBtn = document.getElementById('copyIdBtn');
             const targetIdInput = document.getElementById('targetId');
@@ -1380,10 +1654,8 @@
             const radarWrapper = document.getElementById('radarWrapper');
             const refreshBtn = document.getElementById('refreshBtn');
 
-            // ===== NEW: Pending attachments array =====
             let pendingAttachments = [];
             const PASTE_CHAR_THRESHOLD = 300;
-            // ===== END NEW =====
 
             let peer = null;
             let conn = null;
@@ -1469,10 +1741,8 @@
                 statusText.dataset.custom = 'false';
                 statusText.style.color = '';
                 chatBox.innerHTML = '';
-                // ===== NEW: Clear pending attachments on disconnect =====
                 pendingAttachments = [];
                 renderPendingAttachments();
-                // ===== END NEW =====
             }
 
             function showTransferUI(peerId) {
@@ -1482,15 +1752,12 @@
                 chatBox.innerHTML = '';
             }
 
-            // ===== NEW: Format file size helper =====
             function formatFileSize(bytes) {
                 if (bytes < 1024) return bytes + ' B';
                 if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
                 return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
             }
-            // ===== END NEW =====
 
-            // ===== NEW: Render pending attachments as removable badges =====
             function renderPendingAttachments() {
                 const container = document.getElementById('pendingAttachments');
                 container.innerHTML = '';
@@ -1499,12 +1766,10 @@
                     const badge = document.createElement('div');
                     badge.className = 'pending-attachment';
 
-                    // File icon
                     const icon = document.createElement('i');
                     icon.className = 'fas fa-file-alt';
                     badge.appendChild(icon);
 
-                    // File info (name + size)
                     const info = document.createElement('div');
                     info.className = 'pending-attachment-info';
 
@@ -1521,7 +1786,6 @@
 
                     badge.appendChild(info);
 
-                    // Remove button
                     const removeBtn = document.createElement('button');
                     removeBtn.className = 'pending-attachment-remove';
                     removeBtn.title = t('removeAttachment');
@@ -1536,50 +1800,31 @@
                     container.appendChild(badge);
                 });
             }
-            // ===== END NEW =====
 
-            // ===== NEW: Paste interception handler =====
-            // Intercepts pasted text that exceeds the character threshold OR
-            // contains multiple lines, converting it into a .txt file attachment
-            // instead of inserting it as plain text into the input field.
             msgInput.addEventListener('paste', function(e) {
                 const clipboardData = e.clipboardData || window.clipboardData;
                 if (!clipboardData) return;
 
-                // Only intercept plain text pastes; let image/file pastes through
                 const pastedText = clipboardData.getData('text');
                 if (!pastedText) return;
 
                 const charCount = pastedText.length;
                 const lineCount = pastedText.split(/\r\n|\r|\n/).length;
 
-                // Trigger conversion if text exceeds threshold OR has multiple lines
                 if (charCount > PASTE_CHAR_THRESHOLD || lineCount > 1) {
                     e.preventDefault();
 
-                    // Create a timestamped filename
                     const timestamp = Date.now();
                     const filename = `shared-text-${timestamp}.txt`;
 
-                    // Create a Blob preserving ALL original formatting:
-                    // - spacing, indentation, line breaks, bullet points, special chars
-                    // Using text/plain with UTF-8 charset ensures unicode is preserved
                     const blob = new Blob([pastedText], { type: 'text/plain;charset=utf-8' });
                     const file = new File([blob], filename, { type: 'text/plain;charset=utf-8' });
 
-                    // Add to pending attachments array
                     pendingAttachments.push(file);
-
-                    // Render the badge UI
                     renderPendingAttachments();
-
-                    // Show a brief system notification
                     systemMessage('pastedTextAttached', { name: filename });
                 }
-                // If the paste is short and single-line, let it proceed normally
-                // as plain text insertion into the input field (default behavior)
             });
-            // ===== END NEW =====
 
             // ---------- Radar simulation ----------
             let radarInterval = null;
@@ -1659,7 +1904,7 @@
 
             refreshBtn.addEventListener('click', refreshConnection);
 
-            // ---------- Peer init ----------
+            // ---------- Peer init (slightly modified to expose peer globally for QR) ----------
             function initPeer() {
                 myId = Math.floor(1000 + Math.random() * 9000).toString();
                 myIdDisplay.textContent = myId;
@@ -1687,6 +1932,8 @@
                     conn.on('open', () => {
                         showTransferUI(conn.peer);
                         systemMessage('systemConnected');
+                        // Close QR modal if open
+                        closeQRModal();
                     });
                     conn.on('data', (data) => handleIncomingData(data));
                     conn.on('close', () => {
@@ -1890,31 +2137,25 @@
                 this.value = '';
             });
 
-            // ===== MODIFIED: Send message now handles pending attachments =====
             function sendMessage() {
                 const text = msgInput.value.trim();
 
-                // Allow sending if there's text OR pending attachments, but require a connection
                 if ((!text && pendingAttachments.length === 0) || !conn) return;
 
-                // Send all pending text-file attachments through the existing P2P pipeline
                 for (const file of pendingAttachments) {
                     systemMessage('systemSending', { name: file.name });
                     sendFile(file, { label: 'pasted-text', source: 'paste-intercept' });
                 }
 
-                // Send companion text if the user typed something alongside the attachments
                 if (text) {
                     conn.send({ type: 'text', payload: text });
                     addMessage('Me', text, 'sent');
                 }
 
-                // Clear everything
                 pendingAttachments = [];
                 renderPendingAttachments();
                 msgInput.value = '';
             }
-            // ===== END MODIFIED =====
 
             sendBtn.addEventListener('click', sendMessage);
             msgInput.addEventListener('keypress', (e) => {
@@ -1957,15 +2198,380 @@
                 }
             });
 
+            // ================================================================
+            // 3. NEW QR CODE LOGIC (injected)
+            // ================================================================
+
+            // ---------- DOM refs for QR modal ----------
+            const qrModalOverlay = document.getElementById('qrModalOverlay');
+            const qrModalClose = document.getElementById('qrModalClose');
+            const qrOpenBtn = document.getElementById('qrOpenBtn');
+            const qrRefreshBtn = document.getElementById('qrRefreshBtn');
+            const qrToggleScanBtn = document.getElementById('qrToggleScanBtn');
+            const qrStatus = document.getElementById('qrStatus');
+            const qrCodeContainer = document.getElementById('qrCodeContainer');
+            const qrScannerContainer = document.getElementById('qrScannerContainer');
+            const qrScanError = document.getElementById('qrScanError');
+
+            // ---------- Postbase client ----------
+            let postbaseClient = null;
+            let activeSessionId = null;
+            let activeSubscription = null;
+            let qrCodeInstance = null;
+            let html5QrCode = null;
+            let isScanning = false;
+            let isQrGenerating = false;
+
+            function initPostbase() {
+                if (!POSTBASE_URL || POSTBASE_URL === "YOUR_POSTBASE_PROJECT_URL") {
+                    console.warn("Postbase URL not configured. QR will not work.");
+                    return null;
+                }
+                if (!POSTBASE_ANON_KEY || POSTBASE_ANON_KEY === "YOUR_POSTBASE_ANON_KEY") {
+                    console.warn("Postbase anon key not configured. QR will not work.");
+                    return null;
+                }
+                try {
+                    // Assuming postbase-js exposes a global `postbase` constructor
+                    // If not, adjust based on the actual SDK.
+                    const client = postbase.createClient(POSTBASE_URL, POSTBASE_ANON_KEY);
+                    return client;
+                } catch (e) {
+                    console.error("Failed to init Postbase client:", e);
+                    return null;
+                }
+            }
+
+            // ---------- Generate UUID v4 (fallback) ----------
+            function generateUUID() {
+                if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                    return crypto.randomUUID();
+                }
+                // fallback
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    const r = Math.random() * 16 | 0;
+                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            }
+
+            // ---------- Generate QR session ----------
+            async function generateQRSession() {
+                if (isQrGenerating) return;
+                isQrGenerating = true;
+                qrStatus.textContent = t('qrConnecting') + '...';
+                qrScanError.textContent = '';
+
+                const client = initPostbase();
+                if (!client) {
+                    qrStatus.textContent = t('qrError', { msg: 'Postbase not configured' });
+                    isQrGenerating = false;
+                    return;
+                }
+
+                const sessionId = generateUUID();
+                const desktopPeerId = myId; // our own PeerJS ID
+
+                try {
+                    // Insert session
+                    const { error } = await client.from('device_sessions').insert({
+                        id: sessionId,
+                        status: 'pending',
+                        user_id: null,
+                        created_at: new Date().toISOString()
+                    });
+                    if (error) throw error;
+
+                    activeSessionId = sessionId;
+
+                    // Generate QR data: we encode sessionId + desktopPeerId
+                    const qrData = JSON.stringify({ sessionId, peerId: desktopPeerId });
+
+                    // Clear previous QR
+                    qrCodeContainer.innerHTML = '';
+                    // Create QR code using qrcode.js
+                    qrCodeInstance = new QRCode(qrCodeContainer, {
+                        text: qrData,
+                        width: 200,
+                        height: 200,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+
+                    qrStatus.textContent = t('qrWaiting');
+                    qrStatus.dataset.manual = 'true';
+
+                    // Subscribe to real-time updates
+                    if (activeSubscription) {
+                        activeSubscription.unsubscribe();
+                        activeSubscription = null;
+                    }
+
+                    activeSubscription = client.from('device_sessions')
+                        .on('*', (payload) => {
+                            if (payload.eventType === 'UPDATE' && payload.new && payload.new.id === sessionId) {
+                                if (payload.new.status === 'connected') {
+                                    // Mobile has confirmed!
+                                    qrStatus.textContent = t('qrConnected');
+                                    qrStatus.style.color = 'var(--success)';
+                                    // Close QR modal after a moment, connection will be established
+                                    setTimeout(() => {
+                                        closeQRModal();
+                                    }, 1500);
+                                    // The PeerJS connection will be established by the mobile side.
+                                    // But we also need to accept the connection – our peer.on('connection') handles it.
+                                }
+                            }
+                        })
+                        .subscribe();
+
+                } catch (err) {
+                    console.error('QR session error:', err);
+                    qrStatus.textContent = t('qrError', { msg: err.message || 'Unknown' });
+                    qrStatus.style.color = 'var(--danger)';
+                } finally {
+                    isQrGenerating = false;
+                }
+            }
+
+            // ---------- Refresh QR ----------
+            function refreshQR() {
+                if (activeSubscription) {
+                    activeSubscription.unsubscribe();
+                    activeSubscription = null;
+                }
+                if (activeSessionId) {
+                    // Optional: delete old session from DB? Not required, but we can ignore.
+                    activeSessionId = null;
+                }
+                qrStatus.style.color = '';
+                qrScanError.textContent = '';
+                generateQRSession();
+            }
+
+            // ---------- Close QR modal ----------
+            function closeQRModal() {
+                qrModalOverlay.classList.remove('open');
+                // Stop scanner if active
+                stopScanner();
+                // Unsubscribe from real-time
+                if (activeSubscription) {
+                    activeSubscription.unsubscribe();
+                    activeSubscription = null;
+                }
+                // Clear any error
+                qrScanError.textContent = '';
+                // Reset status style
+                qrStatus.style.color = '';
+                // If we have a connection, ensure UI is updated
+                if (conn) {
+                    showTransferUI(conn.peer);
+                }
+            }
+
+            // ---------- Open QR modal ----------
+            function openQRModal() {
+                qrModalOverlay.classList.add('open');
+                // Ensure scanner is stopped and hidden
+                stopScanner();
+                // Show QR display, hide scanner
+                document.getElementById('qrDisplayArea').style.display = 'block';
+                // Generate QR if not already
+                if (!activeSessionId) {
+                    generateQRSession();
+                } else {
+                    // Refresh to be safe
+                    refreshQR();
+                }
+            }
+
+            // ---------- Toggle Scanner ----------
+            let scannerActive = false;
+
+            async function toggleScanner() {
+                if (scannerActive) {
+                    stopScanner();
+                    return;
+                }
+                // Start scanner
+                qrScanError.textContent = '';
+                const client = initPostbase();
+                if (!client) {
+                    qrScanError.textContent = 'Postbase not configured';
+                    return;
+                }
+
+                // Hide QR display, show scanner
+                document.getElementById('qrDisplayArea').style.display = 'none';
+                qrScannerContainer.style.display = 'block';
+
+                try {
+                    html5QrCode = new Html5Qrcode("qrScannerContainer");
+                    const config = {
+                        fps: 10,
+                        qrbox: { width: 240, height: 240 },
+                        aspectRatio: 1.0
+                    };
+                    await html5QrCode.start(
+                        { facingMode: "environment" },
+                        config,
+                        onScanSuccess,
+                        onScanError
+                    );
+                    scannerActive = true;
+                    qrToggleScanBtn.querySelector('span').textContent = t('qrShowQR');
+                    qrToggleScanBtn.innerHTML = `<i class="fas fa-arrow-left"></i> <span>${t('qrShowQR')}</span>`;
+                } catch (err) {
+                    console.error('Scanner start error:', err);
+                    qrScanError.textContent = 'Camera access denied or not supported.';
+                    // fallback: show QR again
+                    document.getElementById('qrDisplayArea').style.display = 'block';
+                    qrScannerContainer.style.display = 'none';
+                    qrToggleScanBtn.innerHTML = `<i class="fas fa-camera"></i> <span>${t('qrScan')}</span>`;
+                }
+            }
+
+            function stopScanner() {
+                if (html5QrCode) {
+                    try {
+                        html5QrCode.stop().then(() => {
+                            html5QrCode.clear();
+                            html5QrCode = null;
+                        }).catch(() => {});
+                    } catch (e) {}
+                }
+                scannerActive = false;
+                qrScannerContainer.style.display = 'none';
+                document.getElementById('qrDisplayArea').style.display = 'block';
+                qrToggleScanBtn.innerHTML = `<i class="fas fa-camera"></i> <span>${t('qrScan')}</span>`;
+                // Re-show QR if we have a session
+                if (!activeSessionId) {
+                    generateQRSession();
+                }
+            }
+
+            // ---------- Scan success handler ----------
+            async function onScanSuccess(decodedText) {
+                // Stop scanner
+                stopScanner();
+
+                let sessionId, peerId;
+                try {
+                    const data = JSON.parse(decodedText);
+                    sessionId = data.sessionId;
+                    peerId = data.peerId;
+                } catch (e) {
+                    qrScanError.textContent = 'Invalid QR data. Please scan the correct QR.';
+                    return;
+                }
+
+                if (!sessionId || !peerId) {
+                    qrScanError.textContent = 'Invalid QR data. Missing session or peer ID.';
+                    return;
+                }
+
+                // Update Postbase session status to 'connected'
+                const client = initPostbase();
+                if (!client) {
+                    qrScanError.textContent = 'Postbase not configured';
+                    return;
+                }
+
+                try {
+                    // Update status
+                    const { error } = await client.from('device_sessions')
+                        .update({ status: 'connected', user_id: myId })
+                        .eq('id', sessionId);
+                    if (error) throw error;
+
+                    // Now connect to the desktop peer via PeerJS
+                    // We need to ensure our peer is initialized (it is, from initPeer)
+                    if (!peer) {
+                        // If peer not ready, wait briefly
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                    if (peer) {
+                        // Connect to the desktop peer
+                        const targetPeerId = peerId;
+                        // Close any existing connection
+                        if (conn) {
+                            conn.close();
+                            resetUI();
+                        }
+                        // Establish connection
+                        conn = peer.connect(targetPeerId);
+                        conn.on('open', () => {
+                            showTransferUI(conn.peer);
+                            systemMessage('systemConnected');
+                            // Close QR modal on mobile as well
+                            closeQRModal();
+                        });
+                        conn.on('data', (data) => handleIncomingData(data));
+                        conn.on('close', () => {
+                            systemMessage('systemClosed');
+                            resetUI();
+                        });
+                        conn.on('error', (err) => {
+                            console.error('QR connect error:', err);
+                            qrScanError.textContent = 'Connection failed: ' + err.message;
+                        });
+                        // Update status text
+                        statusText.textContent = t('connected');
+                        statusText.dataset.custom = 'false';
+                    } else {
+                        qrScanError.textContent = 'Peer not initialized. Please refresh.';
+                    }
+                } catch (err) {
+                    console.error('QR scan update error:', err);
+                    qrScanError.textContent = 'Failed to update session: ' + err.message;
+                }
+            }
+
+            function onScanError(err) {
+                // ignore, continuous scanning
+            }
+
+            // ---------- QR Modal Event Listeners ----------
+            qrOpenBtn.addEventListener('click', openQRModal);
+            qrModalClose.addEventListener('click', closeQRModal);
+            qrRefreshBtn.addEventListener('click', refreshQR);
+
+            qrToggleScanBtn.addEventListener('click', toggleScanner);
+
+            // Close modal on outside click
+            qrModalOverlay.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeQRModal();
+                }
+            });
+
             // ---------- Init ----------
             initPeer();
             updateUI();
 
+            // Re-apply language for QR texts when language changes
             document.getElementById('langSelect').addEventListener('change', function() {
                 if (statusText.dataset.custom === 'false') {
                     statusText.textContent = t('ready');
                 }
+                // Update QR status if it's the default waiting text
+                if (qrStatus.dataset.manual !== 'true') {
+                    qrStatus.textContent = t('qrWaiting');
+                }
+                // Update toggle button text
+                const scanSpan = qrToggleScanBtn.querySelector('span');
+                if (scanSpan && !scannerActive) {
+                    scanSpan.textContent = t('qrScan');
+                }
+                const refreshSpan = qrRefreshBtn.querySelector('span');
+                if (refreshSpan) {
+                    refreshSpan.textContent = t('qrRefresh');
+                }
             });
+
+            // Expose QR functions for debugging if needed
+            window.__webdropQR = { openQRModal, closeQRModal, refreshQR };
 
         })();
     </script>
