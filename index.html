@@ -2764,78 +2764,64 @@
 
             // ---------- Scan success handler ----------
             async function onScanSuccess(decodedText) {
-                // Stop scanner
-                stopScanner();
+                // QR scanning only discovers the other device's PeerJS ID.
+                // After that, deliberately use the EXACT SAME connection path
+                // as manual ID entry, because manual entry is the known-good
+                // connection path for text and file transfers.
+                await stopScanner();
 
-                let sessionId, peerId;
+                let peerId = null;
                 try {
                     const data = JSON.parse(decodedText);
-                    sessionId = data.sessionId;
-                    peerId = data.peerId;
+                    peerId = data.peerId || data.targetPeerId || null;
                 } catch (e) {
-                    qrScanError.textContent = 'Invalid QR data. Please scan the correct QR.';
+                    const plain = String(decodedText || '').trim();
+                    if (/^\d{4,10}$/.test(plain)) peerId = plain;
+                }
+
+                if (!peerId) {
+                    qrScanError.textContent = 'Invalid QR data. Missing peer ID.';
                     return;
                 }
 
-                if (!sessionId || !peerId) {
-                    qrScanError.textContent = 'Invalid QR data. Missing session or peer ID.';
-                    return;
-                }
-
-                // Update Postbase session status to 'connected'
-                const client = initPostbase();
-                if (!client) {
-                    qrScanError.textContent = 'Postbase not configured';
-                    return;
-                }
+                qrStatus.textContent = t('qrConnecting');
+                qrScanError.textContent = '';
 
                 try {
-                    // Update status
-                    const { error } = await client.from('device_sessions')
-                        .update({ status: 'connected', user_id: myId })
-                        .eq('id', sessionId);
-                    if (error) throw error;
-
-                    // Now connect to the desktop peer via PeerJS
-                    // We need to ensure our peer is initialized (it is, from initPeer)
                     if (!peer) {
-                        // If peer not ready, wait briefly
                         await new Promise(resolve => setTimeout(resolve, 500));
                     }
-                    if (peer) {
-                        // Connect to the desktop peer
-                        const targetPeerId = peerId;
-                        // Close any existing connection
-                        if (conn) {
-                            conn.close();
-                            resetUI();
-                        }
-                        // Establish connection
-                        conn = peer.connect(targetPeerId);
-                        conn.on('open', () => {
-                            showTransferUI(conn.peer);
-                            systemMessage('systemConnected');
-                            // Close QR modal on mobile as well
-                            closeQRModal();
-                        });
-                        conn.on('data', (data) => handleIncomingData(data));
-                        conn.on('close', () => {
-                            systemMessage('systemClosed');
-                            resetUI();
-                        });
-                        conn.on('error', (err) => {
-                            console.error('QR connect error:', err);
-                            qrScanError.textContent = 'Connection failed: ' + err.message;
-                        });
-                        // Update status text
-                        statusText.textContent = t('connected');
-                        statusText.dataset.custom = 'false';
-                    } else {
-                        qrScanError.textContent = 'Peer not initialized. Please refresh.';
+
+                    if (!peer) {
+                        throw new Error('PeerJS is not ready. Please refresh and try again.');
                     }
+
+                    // IMPORTANT: Do NOT create a second/custom connection here.
+                    // connectToPeer() is the same function used when the user
+                    // manually enters the 4-digit ID, and that path already
+                    // handles open/data/close/error correctly.
+                    connectToPeer(peerId);
+
+                    const startedAt = Date.now();
+                    const waitForConnection = () => {
+                        if (conn && conn.open) {
+                            qrStatus.textContent = t('qrConnected');
+                            closeQRModal();
+                            return;
+                        }
+
+                        if (Date.now() - startedAt > 15000) {
+                            qrScanError.textContent = 'Connection timed out. Please scan again.';
+                            return;
+                        }
+
+                        setTimeout(waitForConnection, 100);
+                    };
+
+                    waitForConnection();
                 } catch (err) {
-                    console.error('QR scan update error:', err);
-                    qrScanError.textContent = 'Failed to update session: ' + err.message;
+                    console.error('QR connection error:', err);
+                    qrScanError.textContent = 'Connection failed: ' + (err.message || err);
                 }
             }
 
