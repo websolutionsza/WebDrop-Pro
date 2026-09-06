@@ -1035,6 +1035,72 @@
             min-width: 120px;
         }
 
+        /* QR mode chooser */
+        .qr-choice-view {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 10px;
+        }
+
+        .qr-choice-subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            text-align: center;
+            line-height: 1.5;
+            margin-bottom: 4px;
+        }
+
+        .qr-mode-btn {
+            width: 100%;
+            min-height: 64px;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 14px 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-align: left;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all var(--transition);
+        }
+
+        .qr-mode-btn:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px -10px var(--accent-glow);
+        }
+
+        .qr-mode-btn i {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-glow);
+            color: var(--accent);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .qr-mode-btn small {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            font-weight: 400;
+            margin-top: 3px;
+        }
+
+        .qr-back-btn {
+            margin-top: 10px;
+            align-self: center;
+        }
+
         /* scanner area inside modal */
         #qrScannerContainer {
             width: 100%;
@@ -1260,14 +1326,35 @@
         </div>
     </div>
 
-    <!-- ===== QR Modal (injected) ===== -->
+    <!-- ===== QR Modal ===== -->
     <div class="qr-modal-overlay" id="qrModalOverlay">
         <div class="qr-modal">
-            <button class="qr-modal-close" id="qrModalClose">&times;</button>
+            <button class="qr-modal-close" id="qrModalClose" aria-label="Close">&times;</button>
+
             <h2><i class="fas fa-qrcode"></i> <span id="qrModalTitle">Connect via QR</span></h2>
 
-            <div class="qr-display-area" id="qrDisplayArea">
-                <!-- QR Code -->
+            <!-- Choice shown on EVERY device -->
+            <div class="qr-choice-view" id="qrChoiceView">
+                <div class="qr-choice-subtitle">Choose how you want to connect.</div>
+
+                <button class="qr-mode-btn" id="qrChooseShowBtn" type="button">
+                    <i class="fas fa-qrcode"></i>
+                    <span>
+                        Show my QR
+                        <small>Show this device's QR code for the other device to scan.</small>
+                    </span>
+                </button>
+
+                <button class="qr-mode-btn" id="qrChooseScanBtn" type="button">
+                    <i class="fas fa-camera"></i>
+                    <span>Scan QR
+                        <small>Open the camera and scan the QR code on another device.</small>
+                    </span>
+                </button>
+            </div>
+
+            <!-- QR generator view -->
+            <div class="qr-display-area" id="qrDisplayArea" style="display:none;">
                 <div id="qrCodeContainer">
                     <div style="width:200px;height:200px;display:flex;align-items:center;justify-content:center;background:#f0f0f0;border-radius:8px;color:#999;font-size:0.9rem;">
                         <i class="fas fa-spinner fa-spin"></i> Loading...
@@ -1277,20 +1364,30 @@
                 <div class="qr-status" id="qrStatus">Waiting for scan...</div>
 
                 <div class="qr-actions">
-                    <button class="btn btn-primary" id="qrRefreshBtn"><i class="fas fa-redo"></i> Refresh QR</button>
-                    <button class="qr-toggle-btn" id="qrToggleScanBtn"><i class="fas fa-camera"></i> <span>Scan QR</span></button>
+                    <button class="btn btn-primary" id="qrRefreshBtn" type="button"><i class="fas fa-redo"></i> Refresh QR</button>
+                    <button class="qr-toggle-btn" id="qrToggleScanBtn" type="button"><i class="fas fa-camera"></i> <span>Scan QR</span></button>
                 </div>
 
-                <div class="qr-divider"><span>or</span></div>
+                <button class="qr-toggle-btn qr-back-btn" id="qrBackToChoicesBtn" type="button">
+                    <i class="fas fa-arrow-left"></i> <span>Back</span>
+                </button>
+            </div>
 
-                <!-- Scanner -->
+            <!-- Camera scanner view -->
+            <div id="qrScannerView" style="display:none;">
                 <div id="qrScannerContainer">
                     <div class="scanner-placeholder">
                         <i class="fas fa-camera" style="font-size:2rem;display:block;margin-bottom:12px;"></i>
-                        Tap "Scan QR" to open camera
+                        Camera will appear here.
                     </div>
                 </div>
                 <div id="qrScanError" class="qr-error"></div>
+
+                <div class="qr-actions">
+                    <button class="qr-toggle-btn" id="qrBackFromScannerBtn" type="button">
+                        <i class="fas fa-arrow-left"></i> <span>Back</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -2216,6 +2313,13 @@
             const qrCodeContainer = document.getElementById('qrCodeContainer');
             const qrScannerContainer = document.getElementById('qrScannerContainer');
             const qrScanError = document.getElementById('qrScanError');
+            const qrChoiceView = document.getElementById('qrChoiceView');
+            const qrChooseShowBtn = document.getElementById('qrChooseShowBtn');
+            const qrChooseScanBtn = document.getElementById('qrChooseScanBtn');
+            const qrDisplayArea = document.getElementById('qrDisplayArea');
+            const qrScannerView = document.getElementById('qrScannerView');
+            const qrBackToChoicesBtn = document.getElementById('qrBackToChoicesBtn');
+            const qrBackFromScannerBtn = document.getElementById('qrBackFromScannerBtn');
 
             // ---------- Postbase client ----------
             let postbaseClient = null;
@@ -2393,117 +2497,160 @@
                 }
             }
 
-            // ---------- Detect mobile/tablet ----------
-            function isMobileDevice() {
-                return /Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry/i.test(navigator.userAgent)
-                    || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
-            }
-
-            // ---------- Open QR modal ----------
+            // ---------- QR mode selection ----------
             function openQRModal() {
                 qrModalOverlay.classList.add('open');
-                qrScanError.textContent = '';
-                qrStatus.style.color = '';
-
-                // MOBILE: open the phone camera immediately so the user can scan
-                // the QR code shown on the other device. Do not show "Show my QR".
-                if (isMobileDevice()) {
-                    document.getElementById('qrDisplayArea').style.display = 'none';
-                    qrScannerContainer.style.display = 'block';
-                    qrToggleScanBtn.innerHTML = `<i class="fas fa-stop"></i> <span>Stop Camera</span>`;
-
-                    // Start immediately from the button click so the browser
-                    // treats this as a direct camera request.
-                    if (!scannerActive) toggleScanner();
-                    return;
-                }
-
-                // DESKTOP: show this device's QR code.
-                stopScanner();
-                document.getElementById('qrDisplayArea').style.display = 'block';
-                if (!activeSessionId) {
-                    generateQRSession();
-                } else {
-                    refreshQR();
-                }
+                showQRChoices();
             }
 
-            // ---------- Toggle Scanner ----------
-            let scannerActive = false;
-
-            async function toggleScanner() {
-                if (scannerActive) {
-                    stopScanner();
-                    return;
-                }
-                // Start scanner. Camera access must not depend on Postbase.
+            function showQRChoices() {
+                stopScanner();
+                qrChoiceView.style.display = 'flex';
+                qrDisplayArea.style.display = 'none';
+                qrScannerView.style.display = 'none';
                 qrScanError.textContent = '';
+                qrStatus.style.color = '';
+                qrModalTitle.textContent = 'Connect via QR';
+            }
 
-                // Hide QR display, show scanner
-                document.getElementById('qrDisplayArea').style.display = 'none';
-                qrScannerContainer.style.display = 'block';
+            async function showMyQR() {
+                stopScanner();
+                qrChoiceView.style.display = 'none';
+                qrScannerView.style.display = 'none';
+                qrDisplayArea.style.display = 'flex';
+                qrScanError.textContent = '';
+                qrStatus.style.color = '';
+                qrModalTitle.textContent = 'Show my QR';
+
+                // Always generate a fresh session when entering this mode.
+                if (activeSessionId) {
+                    if (activeSubscription) {
+                        clearInterval(activeSubscription);
+                        activeSubscription = null;
+                    }
+                    activeSessionId = null;
+                }
+                await generateQRSession();
+            }
+
+            // ---------- Camera scanner ----------
+            async function startScannerMode() {
+                stopScanner();
+
+                qrChoiceView.style.display = 'none';
+                qrDisplayArea.style.display = 'none';
+                qrScannerView.style.display = 'block';
+                qrScanError.textContent = '';
+                qrModalTitle.textContent = 'Scan QR Code';
 
                 try {
-                    html5QrCode = new Html5Qrcode("qrScannerContainer");
+                    if (!window.Html5Qrcode) {
+                        throw new Error('QR scanner library failed to load. Please refresh the page.');
+                    }
+
+                    html5QrCode = new Html5Qrcode('qrScannerContainer');
                     const config = {
                         fps: 10,
                         qrbox: { width: 240, height: 240 },
-                        aspectRatio: 1.0
+                        aspectRatio: 1.0,
+                        rememberLastUsedCamera: true
                     };
 
-                    // Ask the browser directly for the rear/environment camera.
-                    // This is more reliable on phones than enumerating cameras first,
-                    // especially on iPhone/iPad where camera labels can be hidden until
-                    // permission has been granted.
+                    // The camera request is made directly from the user's button action.
+                    // environment = rear camera on phones where supported.
                     await html5QrCode.start(
-                        { facingMode: 'environment' },
+                        { facingMode: { exact: 'environment' } },
                         config,
                         onScanSuccess,
                         onScanError
                     );
+
                     scannerActive = true;
-                    qrToggleScanBtn.innerHTML = `<i class="fas fa-stop"></i> <span>Stop Camera</span>`;
-                } catch (err) {
-                    console.error('Scanner start error:', err);
-                    const message = err && err.message ? err.message : 'Unable to open the camera.';
-                    qrScanError.textContent = message + ' Make sure you are using HTTPS and allow camera permission.';
-                    // fallback: show QR again
-                    // Keep the modal in scanner mode on mobile so the user sees the
-                    // camera area and gets a useful camera/permission error.
-                    if (isMobileDevice()) {
-                        document.getElementById('qrDisplayArea').style.display = 'none';
-                        qrScannerContainer.style.display = 'block';
-                    } else {
-                        document.getElementById('qrDisplayArea').style.display = 'block';
-                        qrScannerContainer.style.display = 'none';
+                } catch (firstErr) {
+                    console.warn('Rear camera start failed, trying default camera:', firstErr);
+
+                    // Some browsers (especially desktop Safari/older Chromium) reject
+                    // the exact-facingMode constraint. Re-create the scanner and retry.
+                    try {
+                        if (html5QrCode) {
+                            try { await html5QrCode.clear(); } catch (_) {}
+                        }
+                        html5QrCode = new Html5Qrcode('qrScannerContainer');
+                        const config = {
+                            fps: 10,
+                            qrbox: { width: 240, height: 240 },
+                            aspectRatio: 1.0,
+                            rememberLastUsedCamera: true
+                        };
+
+                        const cameras = await Html5Qrcode.getCameras();
+                        if (!cameras || !cameras.length) {
+                            throw new Error('No camera was found on this device.');
+                        }
+
+                        // Prefer a rear camera when the browser exposes labels.
+                        const rear = cameras.find(c => /back|rear|environment/i.test(c.label));
+                        const cameraId = (rear || cameras[0]).id;
+
+                        await html5QrCode.start(
+                            cameraId,
+                            config,
+                            onScanSuccess,
+                            onScanError
+                        );
+
+                        scannerActive = true;
+                    } catch (secondErr) {
+                        console.error('Camera start failed:', secondErr);
+                        const message = secondErr?.message || firstErr?.message || 'Unable to open the camera.';
+                        qrScanError.innerHTML =
+                            '<strong>Camera could not be opened.</strong><br>' +
+                            escapeHtml(message) +
+                            '<br><br>Make sure this site is using HTTPS and that your browser has camera permission.';
+                        scannerActive = false;
                     }
-                    qrToggleScanBtn.innerHTML = `<i class="fas fa-camera"></i> <span>Open Camera</span>`;
                 }
             }
 
-            function stopScanner() {
+            function escapeHtml(value) {
+                return String(value).replace(/[&<>'"]/g, ch => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                }[ch]));
+            }
+
+            async function stopScanner() {
                 if (html5QrCode) {
                     try {
-                        html5QrCode.stop().then(() => {
-                            html5QrCode.clear();
-                            html5QrCode = null;
-                        }).catch(() => {});
-                    } catch (e) {}
+                        if (scannerActive) {
+                            await html5QrCode.stop();
+                        }
+                    } catch (_) {}
+                    try {
+                        await html5QrCode.clear();
+                    } catch (_) {}
+                    html5QrCode = null;
                 }
                 scannerActive = false;
-                qrScannerContainer.style.display = 'none';
+            }
 
-                if (isMobileDevice()) {
-                    // On a phone the QR button is a scanner, not a QR generator.
-                    document.getElementById('qrDisplayArea').style.display = 'none';
-                    qrToggleScanBtn.innerHTML = `<i class="fas fa-camera"></i> <span>Open Camera</span>`;
-                } else {
-                    document.getElementById('qrDisplayArea').style.display = 'block';
-                    qrToggleScanBtn.innerHTML = `<i class="fas fa-camera"></i> <span>${t('qrScan')}</span>`;
-                    // Re-show QR if we have a session
-                    if (!activeSessionId) {
-                        generateQRSession();
-                    }
+            // ---------- Close QR modal ----------
+            function closeQRModal() {
+                qrModalOverlay.classList.remove('open');
+                stopScanner();
+
+                if (activeSubscription) {
+                    clearInterval(activeSubscription);
+                    activeSubscription = null;
+                }
+
+                qrScanError.textContent = '';
+                qrStatus.style.color = '';
+                qrChoiceView.style.display = 'flex';
+                qrDisplayArea.style.display = 'none';
+                qrScannerView.style.display = 'none';
+
+                if (conn) {
+                    showTransferUI(conn.peer);
                 }
             }
 
@@ -2591,9 +2738,12 @@
             // ---------- QR Modal Event Listeners ----------
             qrOpenBtn.addEventListener('click', openQRModal);
             qrModalClose.addEventListener('click', closeQRModal);
-            qrRefreshBtn.addEventListener('click', refreshQR);
-
-            qrToggleScanBtn.addEventListener('click', toggleScanner);
+            qrRefreshBtn.addEventListener('click', showMyQR);
+            qrChooseShowBtn.addEventListener('click', showMyQR);
+            qrChooseScanBtn.addEventListener('click', startScannerMode);
+            qrToggleScanBtn.addEventListener('click', startScannerMode);
+            qrBackToChoicesBtn.addEventListener('click', showQRChoices);
+            qrBackFromScannerBtn.addEventListener('click', showQRChoices);
 
             // Close modal on outside click
             qrModalOverlay.addEventListener('click', function(e) {
@@ -2611,19 +2761,11 @@
                 if (statusText.dataset.custom === 'false') {
                     statusText.textContent = t('ready');
                 }
-                // Update QR status if it's the default waiting text
-                if (qrStatus.dataset.manual !== 'true') {
-                    qrStatus.textContent = t('qrWaiting');
-                }
-                // Update toggle button text
+                // Keep the QR action labels consistent after a language change.
                 const scanSpan = qrToggleScanBtn.querySelector('span');
-                if (scanSpan && !scannerActive) {
-                    scanSpan.textContent = isMobileDevice() ? 'Open Camera' : t('qrScan');
-                }
-                const refreshSpan = qrRefreshBtn.querySelector('span');
-                if (refreshSpan) {
-                    refreshSpan.textContent = t('qrRefresh');
-                }
+                if (scanSpan && !scannerActive) scanSpan.textContent = t('qrScan');
+                const refreshText = qrRefreshBtn.querySelector('i');
+                if (refreshText) qrRefreshBtn.innerHTML = `<i class="fas fa-redo"></i> ${t('qrRefresh')}`;
             });
 
             // Expose QR functions for debugging if needed
