@@ -4,12 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>WebDrop Pro – Secure P2P File Exchange</title>
-    <!-- PWA icon and manifest -->
     <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22WebDrop%20Pro%22%2C%22short_name%22%3A%22WebDrop%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fraw.githubusercontent.com%2Fwebsolutionsza%2FWebDrop-Pro%2Frefs%2Fheads%2Fmain%2Fweb%20drop%20192.png%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%2C%22display%22%3A%22standalone%22%7D" />
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/websolutionsza/WebDrop-Pro/refs/heads/main/web%20drop%20192.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <style>
-        /* ----- Reset & Full Screen ----- */
         * {
             margin: 0;
             padding: 0;
@@ -87,7 +85,6 @@
             transition: background var(--transition);
         }
 
-        /* ----- Header ----- */
         .header {
             background: var(--bg-header);
             padding: 16px 28px;
@@ -172,7 +169,6 @@
             background: var(--accent-glow);
         }
 
-        /* ----- Content ----- */
         .content {
             flex: 1;
             padding: 28px;
@@ -181,7 +177,6 @@
             width: 100%;
         }
 
-        /* ID card */
         .id-card {
             background: var(--bg-card);
             border-radius: var(--radius);
@@ -272,15 +267,10 @@
         }
         @keyframes pulse {
             0%,
-            100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.3;
-            }
+            100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
 
-        /* Radar */
         .radar-section {
             background: var(--bg-card);
             border-radius: var(--radius);
@@ -305,7 +295,6 @@
             color: var(--accent);
         }
 
-        /* Refresh button */
         .refresh-btn {
             position: absolute;
             right: 0;
@@ -377,12 +366,8 @@
             filter: blur(4px);
         }
         @keyframes sweep {
-            from {
-                transform: rotate(0deg);
-            }
-            to {
-                transform: rotate(360deg);
-            }
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .radar-center {
@@ -409,15 +394,8 @@
             box-shadow: 0 0 20px var(--success);
         }
         @keyframes blip {
-            0%,
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-            50% {
-                transform: scale(1.6);
-                opacity: 0.6;
-            }
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.6); opacity: 0.6; }
         }
 
         .peers-count {
@@ -426,7 +404,6 @@
             font-size: 0.9rem;
         }
 
-        /* Connection panel */
         .connection-panel {
             background: var(--bg-card);
             border-radius: var(--radius);
@@ -510,7 +487,6 @@
             transition: background var(--transition);
         }
 
-        /* Transfer area */
         .transfer-area {
             display: none;
         }
@@ -593,7 +569,6 @@
             display: none;
         }
 
-        /* Chat */
         .chat-area {
             background: var(--bg-card);
             border-radius: var(--radius);
@@ -637,14 +612,8 @@
             line-height: 1.5;
         }
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(8px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .message.sent {
@@ -671,7 +640,6 @@
             padding: 6px 18px;
         }
 
-        /* ----- NEW: Message header + content structure ----- */
         .message-header {
             display: flex;
             justify-content: space-between;
@@ -690,7 +658,6 @@
             margin-top: 2px;
         }
 
-        /* Copy button for received messages */
         .copy-msg-btn {
             background: transparent;
             border: none;
@@ -716,7 +683,6 @@
             opacity: 1;
         }
 
-        /* Keep original file-attachment styling */
         .file-attachment {
             margin-top: 8px;
             padding: 8px 12px;
@@ -741,6 +707,76 @@
             margin-top: 8px;
             max-height: 180px;
         }
+
+        /* ===== NEW: Pending attachments container ===== */
+        .pending-attachments {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px 18px 0;
+            background: var(--bg-body);
+            transition: background var(--transition);
+        }
+        .pending-attachments:empty {
+            display: none;
+            padding: 0;
+        }
+
+        .pending-attachment {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 6px 8px 6px 12px;
+            font-size: 0.85rem;
+            animation: fadeIn 0.2s ease;
+            transition: background var(--transition), border var(--transition);
+            max-width: 100%;
+        }
+        .pending-attachment > i {
+            color: var(--accent);
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .pending-attachment-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            min-width: 0;
+        }
+        .pending-attachment-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .pending-attachment-size {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .pending-attachment-remove {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            transition: all var(--transition);
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pending-attachment-remove:hover {
+            color: var(--danger);
+            background: rgba(220, 38, 38, 0.1);
+        }
+        /* ===== END NEW ===== */
 
         .chat-input {
             display: flex;
@@ -780,7 +816,6 @@
             transform: translateY(-2px);
         }
 
-        /* ----- Footer ----- */
         .footer {
             text-align: center;
             padding: 18px 28px;
@@ -805,7 +840,6 @@
             text-decoration: underline;
         }
 
-        /* ----- Cookie Consent ----- */
         .cookie-consent {
             position: fixed;
             bottom: 0;
@@ -845,7 +879,6 @@
             text-decoration: underline;
         }
 
-        /* Loading */
         .loading {
             display: inline-block;
             width: 18px;
@@ -856,12 +889,9 @@
             animation: spin 0.8s linear infinite;
         }
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
 
-        /* Responsive */
         @media (max-width: 640px) {
             .header {
                 flex-direction: column;
@@ -869,12 +899,8 @@
                 gap: 12px;
                 padding: 16px;
             }
-            .header-left {
-                justify-content: center;
-            }
-            .header-controls {
-                justify-content: center;
-            }
+            .header-left { justify-content: center; }
+            .header-controls { justify-content: center; }
             .header-controls select,
             .header-controls input {
                 min-width: 100px;
@@ -885,57 +911,27 @@
                 align-items: stretch;
                 text-align: center;
             }
-            .id-info {
-                justify-content: center;
-            }
-            .status-badge {
-                justify-content: center;
-            }
+            .id-info { justify-content: center; }
+            .status-badge { justify-content: center; }
             .peer-info {
                 flex-direction: column;
                 align-items: stretch;
                 text-align: center;
             }
-            .peer-badge {
-                justify-content: center;
-            }
-            .file-actions {
-                grid-template-columns: 1fr 1fr;
-            }
-            .chat-messages {
-                height: 200px;
-            }
-            .radar-wrapper {
-                width: 180px;
-                height: 180px;
-            }
-            .radar-sweep {
-                width: 90px;
-                height: 90px;
-            }
-            .radar-center {
-                width: 18px;
-                height: 18px;
-            }
-            .content {
-                padding: 16px;
-            }
-            .header-logo {
-                height: 48px;
-            }
+            .peer-badge { justify-content: center; }
+            .file-actions { grid-template-columns: 1fr 1fr; }
+            .chat-messages { height: 200px; }
+            .radar-wrapper { width: 180px; height: 180px; }
+            .radar-sweep { width: 90px; height: 90px; }
+            .radar-center { width: 18px; height: 18px; }
+            .content { padding: 16px; }
+            .header-logo { height: 48px; }
         }
 
         @media (max-width: 420px) {
-            .file-actions {
-                grid-template-columns: 1fr;
-            }
-            .input-group input {
-                min-width: 120px;
-            }
-            .btn {
-                padding: 10px 18px;
-                font-size: 0.85rem;
-            }
+            .file-actions { grid-template-columns: 1fr; }
+            .input-group input { min-width: 120px; }
+            .btn { padding: 10px 18px; font-size: 0.85rem; }
             .cookie-consent {
                 flex-direction: column;
                 text-align: center;
@@ -948,7 +944,6 @@
 </head>
 <body>
     <div id="app">
-        <!-- ===== HEADER ===== -->
         <header class="header">
             <div class="header-left">
                 <img class="header-logo" src="https://iili.io/CxcDCDx.png" alt="WebDrop Pro" />
@@ -973,12 +968,8 @@
             </div>
         </header>
 
-        <!-- ===== CONTENT ===== -->
         <div class="content">
-
-            <!-- Setup Area -->
             <div id="setupArea">
-                <!-- ID Card -->
                 <div class="id-card">
                     <div class="id-info">
                         <div class="avatar" id="avatarDisplay">DV</div>
@@ -998,7 +989,6 @@
                     </div>
                 </div>
 
-                <!-- Radar -->
                 <div class="radar-section">
                     <div class="radar-title">
                         <i class="fas fa-satellite-dish"></i>
@@ -1015,7 +1005,6 @@
                     <div class="peers-count" id="peersCount">0 peers online</div>
                 </div>
 
-                <!-- Connection Panel -->
                 <div class="connection-panel">
                     <div class="input-group">
                         <input type="text" id="targetId" placeholder="Enter peer ID (e.g. 1234)" maxlength="10" />
@@ -1027,7 +1016,6 @@
                 </div>
             </div>
 
-            <!-- Transfer Area -->
             <div class="transfer-area" id="transferArea">
                 <div class="peer-info">
                     <div class="peer-badge">
@@ -1042,7 +1030,6 @@
                     </button>
                 </div>
 
-                <!-- File Actions -->
                 <div class="file-actions">
                     <label class="file-btn">
                         <i class="fas fa-file-alt"></i>
@@ -1066,13 +1053,17 @@
                     </label>
                 </div>
 
-                <!-- Chat -->
                 <div class="chat-area">
                     <div class="chat-header">
                         <i class="fas fa-comment-dots"></i>
                         <span data-i18n="secureChat">Secure Chat</span>
                     </div>
                     <div class="chat-messages" id="chatBox"></div>
+
+                    <!-- ===== NEW: Pending attachments container ===== -->
+                    <div id="pendingAttachments" class="pending-attachments"></div>
+                    <!-- ===== END NEW ===== -->
+
                     <div class="chat-input">
                         <input type="text" id="msgInput" placeholder="Type a message..." />
                         <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
@@ -1081,7 +1072,6 @@
             </div>
         </div>
 
-        <!-- ===== FOOTER ===== -->
         <div class="footer">
             <span>&copy; <span id="footerYear">2026</span> WebDrop Pro. All rights reserved.</span>
             <span>
@@ -1092,7 +1082,6 @@
             <span>Developed by <a href="https://websolutionsza.github.io/websolutionsSA/" target="_blank" rel="noopener">WebSolutionsSA</a></span>
         </div>
 
-        <!-- ===== COOKIE CONSENT ===== -->
         <div class="cookie-consent" id="cookieConsent">
             <p>
                 <i class="fas fa-cookie-bite"></i>
@@ -1104,11 +1093,8 @@
         </div>
     </div>
 
-    <!-- ===== PEERJS ===== -->
-    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js">
-    </script>
+    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
 
-    <!-- ===== MAIN APP ===== -->
     <script>
         (function() {
             'use strict';
@@ -1139,6 +1125,8 @@
                     connecting: 'Connecting...',
                     connected: 'Connected successfully',
                     failed: 'Connection failed',
+                    pastedTextAttached: 'Pasted text saved as {name}',
+                    removeAttachment: 'Remove attachment',
                 },
                 es: {
                     deviceId: 'Tu ID de dispositivo',
@@ -1164,6 +1152,8 @@
                     connecting: 'Conectando...',
                     connected: 'Conectado exitosamente',
                     failed: 'Conexión fallida',
+                    pastedTextAttached: 'Texto pegado guardado como {name}',
+                    removeAttachment: 'Quitar adjunto',
                 },
                 fr: {
                     deviceId: 'Votre ID d\'appareil',
@@ -1189,6 +1179,8 @@
                     connecting: 'Connexion...',
                     connected: 'Connecté avec succès',
                     failed: 'Échec de la connexion',
+                    pastedTextAttached: 'Texte collé enregistré comme {name}',
+                    removeAttachment: 'Supprimer la pièce jointe',
                 },
                 de: {
                     deviceId: 'Ihre Geräte-ID',
@@ -1214,6 +1206,8 @@
                     connecting: 'Verbinde...',
                     connected: 'Erfolgreich verbunden',
                     failed: 'Verbindung fehlgeschlagen',
+                    pastedTextAttached: 'Eingefügter Text als {name} gespeichert',
+                    removeAttachment: 'Anhang entfernen',
                 },
                 pt: {
                     deviceId: 'Seu ID de dispositivo',
@@ -1239,6 +1233,8 @@
                     connecting: 'Conectando...',
                     connected: 'Conectado com sucesso',
                     failed: 'Falha na conexão',
+                    pastedTextAttached: 'Texto colado salvo como {name}',
+                    removeAttachment: 'Remover anexo',
                 },
                 zh: {
                     deviceId: '您的设备ID',
@@ -1264,6 +1260,8 @@
                     connecting: '连接中...',
                     connected: '连接成功',
                     failed: '连接失败',
+                    pastedTextAttached: '粘贴的文本已保存为 {name}',
+                    removeAttachment: '删除附件',
                 }
             };
 
@@ -1354,7 +1352,6 @@
                 cookieConsent.classList.add('hidden');
             });
 
-            // Terms & Conditions links (placeholder)
             document.querySelectorAll('#termsLink, #cookieTermsLink, #privacyLink, #cookiePrivacyLink').forEach(el => {
                 el.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -1383,12 +1380,16 @@
             const radarWrapper = document.getElementById('radarWrapper');
             const refreshBtn = document.getElementById('refreshBtn');
 
+            // ===== NEW: Pending attachments array =====
+            let pendingAttachments = [];
+            const PASTE_CHAR_THRESHOLD = 300;
+            // ===== END NEW =====
+
             let peer = null;
             let conn = null;
             let myId = '';
 
             // ---------- Helpers ----------
-            // --- FIX 1: Preserve formatting + FIX 2: Add Copy button ---
             function addMessage(sender, text, type) {
                 const div = document.createElement('div');
                 div.className = `message ${type}`;
@@ -1396,7 +1397,6 @@
                 if (type === 'system') {
                     div.textContent = text;
                 } else {
-                    // Header: sender name + copy button (only for received)
                     const header = document.createElement('div');
                     header.className = 'message-header';
 
@@ -1405,7 +1405,6 @@
                     nameSpan.textContent = `${sender}:`;
                     header.appendChild(nameSpan);
 
-                    // Copy button for received messages only
                     if (type === 'received') {
                         const copyBtn = document.createElement('button');
                         copyBtn.className = 'copy-msg-btn';
@@ -1424,7 +1423,6 @@
                             };
                             if (navigator.clipboard) {
                                 navigator.clipboard.writeText(textToCopy).then(doCopy).catch(() => {
-                                    // fallback
                                     const ta = document.createElement('textarea');
                                     ta.value = textToCopy;
                                     document.body.appendChild(ta);
@@ -1448,7 +1446,6 @@
 
                     div.appendChild(header);
 
-                    // Content: message text with preserved whitespace
                     const content = document.createElement('div');
                     content.className = 'message-content';
                     content.textContent = text;
@@ -1472,6 +1469,10 @@
                 statusText.dataset.custom = 'false';
                 statusText.style.color = '';
                 chatBox.innerHTML = '';
+                // ===== NEW: Clear pending attachments on disconnect =====
+                pendingAttachments = [];
+                renderPendingAttachments();
+                // ===== END NEW =====
             }
 
             function showTransferUI(peerId) {
@@ -1480,6 +1481,105 @@
                 peerIdDisplay.textContent = peerId;
                 chatBox.innerHTML = '';
             }
+
+            // ===== NEW: Format file size helper =====
+            function formatFileSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            }
+            // ===== END NEW =====
+
+            // ===== NEW: Render pending attachments as removable badges =====
+            function renderPendingAttachments() {
+                const container = document.getElementById('pendingAttachments');
+                container.innerHTML = '';
+
+                pendingAttachments.forEach((file, index) => {
+                    const badge = document.createElement('div');
+                    badge.className = 'pending-attachment';
+
+                    // File icon
+                    const icon = document.createElement('i');
+                    icon.className = 'fas fa-file-alt';
+                    badge.appendChild(icon);
+
+                    // File info (name + size)
+                    const info = document.createElement('div');
+                    info.className = 'pending-attachment-info';
+
+                    const nameEl = document.createElement('div');
+                    nameEl.className = 'pending-attachment-name';
+                    nameEl.textContent = file.name;
+                    nameEl.title = file.name;
+                    info.appendChild(nameEl);
+
+                    const sizeEl = document.createElement('div');
+                    sizeEl.className = 'pending-attachment-size';
+                    sizeEl.textContent = formatFileSize(file.size);
+                    info.appendChild(sizeEl);
+
+                    badge.appendChild(info);
+
+                    // Remove button
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'pending-attachment-remove';
+                    removeBtn.title = t('removeAttachment');
+                    removeBtn.setAttribute('aria-label', t('removeAttachment'));
+                    removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    removeBtn.addEventListener('click', function() {
+                        pendingAttachments.splice(index, 1);
+                        renderPendingAttachments();
+                    });
+                    badge.appendChild(removeBtn);
+
+                    container.appendChild(badge);
+                });
+            }
+            // ===== END NEW =====
+
+            // ===== NEW: Paste interception handler =====
+            // Intercepts pasted text that exceeds the character threshold OR
+            // contains multiple lines, converting it into a .txt file attachment
+            // instead of inserting it as plain text into the input field.
+            msgInput.addEventListener('paste', function(e) {
+                const clipboardData = e.clipboardData || window.clipboardData;
+                if (!clipboardData) return;
+
+                // Only intercept plain text pastes; let image/file pastes through
+                const pastedText = clipboardData.getData('text');
+                if (!pastedText) return;
+
+                const charCount = pastedText.length;
+                const lineCount = pastedText.split(/\r\n|\r|\n/).length;
+
+                // Trigger conversion if text exceeds threshold OR has multiple lines
+                if (charCount > PASTE_CHAR_THRESHOLD || lineCount > 1) {
+                    e.preventDefault();
+
+                    // Create a timestamped filename
+                    const timestamp = Date.now();
+                    const filename = `shared-text-${timestamp}.txt`;
+
+                    // Create a Blob preserving ALL original formatting:
+                    // - spacing, indentation, line breaks, bullet points, special chars
+                    // Using text/plain with UTF-8 charset ensures unicode is preserved
+                    const blob = new Blob([pastedText], { type: 'text/plain;charset=utf-8' });
+                    const file = new File([blob], filename, { type: 'text/plain;charset=utf-8' });
+
+                    // Add to pending attachments array
+                    pendingAttachments.push(file);
+
+                    // Render the badge UI
+                    renderPendingAttachments();
+
+                    // Show a brief system notification
+                    systemMessage('pastedTextAttached', { name: filename });
+                }
+                // If the paste is short and single-line, let it proceed normally
+                // as plain text insertion into the input field (default behavior)
+            });
+            // ===== END NEW =====
 
             // ---------- Radar simulation ----------
             let radarInterval = null;
@@ -1508,8 +1608,7 @@
                         d.className = 'radar-device';
                         const angle = Math.random() * 2 * Math.PI;
                         const dist = 50 + Math.random() * 70;
-                        const cx = 120,
-                            cy = 120;
+                        const cx = 120, cy = 120;
                         const x = cx + dist * Math.cos(angle);
                         const y = cy + dist * Math.sin(angle);
                         d.style.left = x + 'px';
@@ -1527,37 +1626,30 @@
                 refreshBtn.disabled = true;
                 refreshBtn.classList.add('spinning');
 
-                // Close any active connection
                 if (conn) {
                     conn.close();
                     conn = null;
                 }
 
-                // Tear down existing peer
                 if (peer) {
                     peer.destroy();
                     peer = null;
                 }
 
-                // Reset UI to initial state
                 resetUI();
 
-                // Clear radar immediately
                 radarWrapper.querySelectorAll('.radar-device').forEach(el => el.remove());
                 peersCount.textContent = '0 peers online';
 
-                // Brief delay to let PeerJS clean up, then re-init
                 setTimeout(() => {
                     initPeer();
 
-                    // Restart radar simulation
                     if (radarInterval) {
                         clearInterval(radarInterval);
                         radarInterval = null;
                     }
                     startRadar();
 
-                    // Stop spinning after a satisfying animation
                     setTimeout(() => {
                         refreshBtn.classList.remove('spinning');
                         refreshBtn.disabled = false;
@@ -1671,7 +1763,7 @@
                 }
             }
 
-            // ---------- Receive file (unchanged) ----------
+            // ---------- Receive file ----------
             function receiveFile(data) {
                 const payload = data.payload;
                 if (typeof payload !== 'string' || !payload.startsWith('data:')) {
@@ -1729,7 +1821,7 @@
                     });
             }
 
-            // ---------- Send file (unchanged) ----------
+            // ---------- Send file ----------
             function sendFile(file, metadata) {
                 if (!conn) return;
                 const reader = new FileReader();
@@ -1751,7 +1843,7 @@
                 reader.readAsDataURL(file);
             }
 
-            // ---------- File input handlers (unchanged) ----------
+            // ---------- File input handlers ----------
             function handleFiles(files, label) {
                 if (!conn) return;
                 if (!files.length) return;
@@ -1798,14 +1890,31 @@
                 this.value = '';
             });
 
-            // ---------- Send message ----------
+            // ===== MODIFIED: Send message now handles pending attachments =====
             function sendMessage() {
                 const text = msgInput.value.trim();
-                if (!text || !conn) return;
-                conn.send({ type: 'text', payload: text });
-                addMessage('Me', text, 'sent');
+
+                // Allow sending if there's text OR pending attachments, but require a connection
+                if ((!text && pendingAttachments.length === 0) || !conn) return;
+
+                // Send all pending text-file attachments through the existing P2P pipeline
+                for (const file of pendingAttachments) {
+                    systemMessage('systemSending', { name: file.name });
+                    sendFile(file, { label: 'pasted-text', source: 'paste-intercept' });
+                }
+
+                // Send companion text if the user typed something alongside the attachments
+                if (text) {
+                    conn.send({ type: 'text', payload: text });
+                    addMessage('Me', text, 'sent');
+                }
+
+                // Clear everything
+                pendingAttachments = [];
+                renderPendingAttachments();
                 msgInput.value = '';
             }
+            // ===== END MODIFIED =====
 
             sendBtn.addEventListener('click', sendMessage);
             msgInput.addEventListener('keypress', (e) => {
@@ -1852,7 +1961,6 @@
             initPeer();
             updateUI();
 
-            // Language change re‑translation for status if not custom
             document.getElementById('langSelect').addEventListener('change', function() {
                 if (statusText.dataset.custom === 'false') {
                     statusText.textContent = t('ready');
