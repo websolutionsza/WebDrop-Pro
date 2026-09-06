@@ -7,16 +7,12 @@
     <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22WebDrop%20Pro%22%2C%22short_name%22%3A%22WebDrop%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fraw.githubusercontent.com%2Fwebsolutionsza%2FWebDrop-Pro%2Frefs%2Fheads%2Fmain%2Fweb%20drop%20192.png%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%2C%22display%22%3A%22standalone%22%7D" />
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/websolutionsza/WebDrop-Pro/refs/heads/main/web%20drop%20192.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <meta name="google-site-verification" content="EW_zyixVqq0-JThC-I5D7ryIZjw6xE-TZjUz84TTj3U" />
+    <base target="_blank">
     <style>
-        /* ===== YOUR EXISTING STYLES (unchanged) ===== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        html,
-        body {
+        html, body {
             width: 100%;
             min-height: 100vh;
             background: var(--bg-body);
@@ -98,11 +94,7 @@
             transition: background var(--transition), border var(--transition);
         }
 
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
 
         .header-logo {
             height: 64px;
@@ -192,11 +184,7 @@
             transition: background var(--transition), border var(--transition);
         }
 
-        .id-info {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
+        .id-info { display: flex; align-items: center; gap: 16px; }
 
         .avatar {
             width: 52px;
@@ -220,11 +208,7 @@
             margin-bottom: 4px;
         }
 
-        .id-number {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .id-number { display: flex; align-items: center; gap: 10px; }
         .id-number span {
             font-size: 1.8rem;
             font-weight: 700;
@@ -267,8 +251,7 @@
             animation: pulse 1.5s infinite;
         }
         @keyframes pulse {
-            0%,
-            100% { opacity: 1; }
+            0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
         }
 
@@ -291,10 +274,7 @@
             color: var(--text-secondary);
             position: relative;
         }
-        .radar-title i {
-            font-size: 1.6rem;
-            color: var(--accent);
-        }
+        .radar-title i { font-size: 1.6rem; color: var(--accent); }
 
         .refresh-btn {
             position: absolute;
@@ -323,16 +303,9 @@
             outline: none;
             box-shadow: 0 0 0 3px var(--accent-glow);
         }
-        .refresh-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .refresh-btn.spinning i {
-            animation: spin-refresh 0.8s linear infinite;
-        }
-        @keyframes spin-refresh {
-            to { transform: rotate(360deg); }
-        }
+        .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .refresh-btn.spinning i { animation: spin-refresh 0.8s linear infinite; }
+        @keyframes spin-refresh { to { transform: rotate(360deg); } }
 
         .radar-wrapper {
             position: relative;
@@ -414,11 +387,7 @@
             transition: background var(--transition), border var(--transition);
         }
 
-        .input-group {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
+        .input-group { display: flex; gap: 12px; flex-wrap: wrap; }
         .input-group input {
             flex: 1;
             min-width: 160px;
@@ -460,22 +429,10 @@
             transform: translateY(-2px);
             box-shadow: 0 12px 24px -8px var(--accent-glow);
         }
-        .btn-danger {
-            background: var(--danger);
-            color: #fff;
-        }
-        .btn-danger:hover {
-            background: #b91c1c;
-            transform: translateY(-2px);
-        }
-        .btn-success {
-            background: var(--success);
-            color: #fff;
-        }
-        .btn-success:hover {
-            background: #15803d;
-            transform: translateY(-2px);
-        }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: #b91c1c; transform: translateY(-2px); }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-success:hover { background: #15803d; transform: translateY(-2px); }
 
         .status-text {
             text-align: center;
@@ -488,9 +445,7 @@
             transition: background var(--transition);
         }
 
-        .transfer-area {
-            display: none;
-        }
+        .transfer-area { display: none; }
 
         .peer-info {
             background: var(--bg-card);
@@ -506,11 +461,7 @@
             transition: background var(--transition), border var(--transition);
         }
 
-        .peer-badge {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .peer-badge { display: flex; align-items: center; gap: 12px; }
         .peer-badge i {
             width: 40px;
             height: 40px;
@@ -522,15 +473,8 @@
             color: #fff;
             font-size: 1.2rem;
         }
-        .peer-badge h4 {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            font-weight: 400;
-        }
-        .peer-badge span {
-            font-weight: 600;
-            color: var(--accent);
-        }
+        .peer-badge h4 { font-size: 0.8rem; color: var(--text-muted); font-weight: 400; }
+        .peer-badge span { font-weight: 600; color: var(--accent); }
 
         .file-actions {
             display: grid;
@@ -558,17 +502,9 @@
             background: var(--accent-glow);
             transform: translateY(-2px);
         }
-        .file-btn i {
-            font-size: 2rem;
-            color: var(--accent);
-        }
-        .file-btn span {
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-        .file-btn input {
-            display: none;
-        }
+        .file-btn i { font-size: 2rem; color: var(--accent); }
+        .file-btn span { font-size: 0.85rem; font-weight: 500; }
+        .file-btn input { display: none; }
 
         .chat-area {
             background: var(--bg-card);
@@ -588,9 +524,7 @@
             color: var(--text-secondary);
             font-weight: 500;
         }
-        .chat-header i {
-            color: var(--accent);
-        }
+        .chat-header i { color: var(--accent); }
 
         .chat-messages {
             height: 280px;
@@ -648,10 +582,7 @@
             gap: 8px;
             margin-bottom: 2px;
         }
-        .message-sender {
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
+        .message-sender { font-weight: 600; font-size: 0.9rem; }
         .message-content {
             white-space: pre-wrap;
             word-break: break-word;
@@ -674,15 +605,8 @@
             justify-content: center;
             flex-shrink: 0;
         }
-        .copy-msg-btn:hover {
-            opacity: 1;
-            color: var(--accent);
-            background: var(--accent-glow);
-        }
-        .copy-msg-btn.copied {
-            color: var(--success);
-            opacity: 1;
-        }
+        .copy-msg-btn:hover { opacity: 1; color: var(--accent); background: var(--accent-glow); }
+        .copy-msg-btn.copied { color: var(--success); opacity: 1; }
 
         .file-attachment {
             margin-top: 8px;
@@ -717,10 +641,7 @@
             background: var(--bg-body);
             transition: background var(--transition);
         }
-        .pending-attachments:empty {
-            display: none;
-            padding: 0;
-        }
+        .pending-attachments:empty { display: none; padding: 0; }
 
         .pending-attachment {
             display: flex;
@@ -735,17 +656,8 @@
             transition: background var(--transition), border var(--transition);
             max-width: 100%;
         }
-        .pending-attachment > i {
-            color: var(--accent);
-            font-size: 1rem;
-            flex-shrink: 0;
-        }
-        .pending-attachment-info {
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-            min-width: 0;
-        }
+        .pending-attachment > i { color: var(--accent); font-size: 1rem; flex-shrink: 0; }
+        .pending-attachment-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
         .pending-attachment-name {
             font-weight: 600;
             color: var(--text-primary);
@@ -754,10 +666,7 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .pending-attachment-size {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-        }
+        .pending-attachment-size { font-size: 0.7rem; color: var(--text-muted); }
         .pending-attachment-remove {
             background: transparent;
             border: none;
@@ -772,10 +681,7 @@
             align-items: center;
             justify-content: center;
         }
-        .pending-attachment-remove:hover {
-            color: var(--danger);
-            background: rgba(220, 38, 38, 0.1);
-        }
+        .pending-attachment-remove:hover { color: var(--danger); background: rgba(220, 38, 38, 0.1); }
 
         .chat-input {
             display: flex;
@@ -810,10 +716,7 @@
             cursor: pointer;
             transition: all var(--transition);
         }
-        .chat-input button:hover {
-            background: var(--accent-hover);
-            transform: translateY(-2px);
-        }
+        .chat-input button:hover { background: var(--accent-hover); transform: translateY(-2px); }
 
         .footer {
             text-align: center;
@@ -834,10 +737,7 @@
             font-weight: 500;
             transition: color var(--transition);
         }
-        .footer a:hover {
-            color: var(--accent-hover);
-            text-decoration: underline;
-        }
+        .footer a:hover { color: var(--accent-hover); text-decoration: underline; }
 
         .cookie-consent {
             position: fixed;
@@ -856,27 +756,11 @@
             border-top: 1px solid var(--border-color);
             transition: transform 0.4s ease;
         }
-        .cookie-consent.hidden {
-            transform: translateY(100%);
-        }
-        .cookie-consent p {
-            font-size: 0.9rem;
-            margin: 0;
-            opacity: 0.9;
-        }
-        .cookie-consent .btn {
-            background: var(--accent);
-            color: #fff;
-            padding: 8px 24px;
-            font-size: 0.9rem;
-        }
-        .cookie-consent .btn:hover {
-            background: var(--accent-hover);
-        }
-        .cookie-consent a {
-            color: var(--accent);
-            text-decoration: underline;
-        }
+        .cookie-consent.hidden { transform: translateY(100%); }
+        .cookie-consent p { font-size: 0.9rem; margin: 0; opacity: 0.9; }
+        .cookie-consent .btn { background: var(--accent); color: #fff; padding: 8px 24px; font-size: 0.9rem; }
+        .cookie-consent .btn:hover { background: var(--accent-hover); }
+        .cookie-consent a { color: var(--accent); text-decoration: underline; }
 
         .loading {
             display: inline-block;
@@ -887,8 +771,210 @@
             border-top-color: var(--accent);
             animation: spin 0.8s linear infinite;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== QR MODAL STYLES ===== */
+        .qr-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .qr-modal-overlay.open { display: flex; }
+        .qr-modal {
+            background: var(--bg-container);
+            border-radius: var(--radius);
+            max-width: 480px;
+            width: 100%;
+            padding: 32px 28px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+            transition: background var(--transition), border var(--transition);
+        }
+        .qr-modal-close {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: transparent;
+            border: none;
+            font-size: 1.6rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color var(--transition);
+            line-height: 1;
+        }
+        .qr-modal-close:hover { color: var(--text-primary); }
+        .qr-modal h2 {
+            margin-bottom: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .qr-modal h2 i { color: var(--accent); }
+
+        .qr-display-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+        }
+        #qrCodeContainer {
+            background: #fff;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+        #qrCodeContainer img,
+        #qrCodeContainer canvas {
+            display: block;
+            width: 200px;
+            height: 200px;
+            image-rendering: pixelated;
+        }
+        .qr-status {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            text-align: center;
+            min-height: 1.8em;
+        }
+        .qr-status .loading { vertical-align: middle; margin-right: 6px; }
+
+        .qr-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        .qr-actions .btn { min-width: 120px; }
+
+        .qr-choice-view {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 10px;
+        }
+        .qr-choice-subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            text-align: center;
+            line-height: 1.5;
+            margin-bottom: 4px;
+        }
+        .qr-mode-btn {
+            width: 100%;
+            min-height: 64px;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 14px 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-align: left;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all var(--transition);
+        }
+        .qr-mode-btn:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px -10px var(--accent-glow);
+        }
+        .qr-mode-btn i {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-glow);
+            color: var(--accent);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .qr-mode-btn small {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            font-weight: 400;
+            margin-top: 3px;
+        }
+        .qr-back-btn { margin-top: 10px; align-self: center; }
+
+        #qrScannerContainer {
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            min-height: 240px;
+            position: relative;
+        }
+        #qrScannerContainer video { width: 100%; height: auto; display: block; }
+        #qrScannerContainer .scanner-placeholder {
+            color: #fff;
+            text-align: center;
+            padding: 60px 20px;
+            font-size: 0.95rem;
+            background: #1e293b;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .qr-toggle-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 40px;
+            padding: 10px 20px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: all var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .qr-toggle-btn:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+        .qr-toggle-btn i { color: var(--accent); }
+
+        .qr-divider {
+            width: 100%;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            line-height: 0.1em;
+            margin: 18px 0 16px;
+        }
+        .qr-divider span {
+            background: var(--bg-container);
+            padding: 0 12px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .qr-error {
+            color: var(--danger);
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 8px;
         }
 
         @media (max-width: 640px) {
@@ -901,10 +987,7 @@
             .header-left { justify-content: center; }
             .header-controls { justify-content: center; }
             .header-controls select,
-            .header-controls input {
-                min-width: 100px;
-                flex: 1;
-            }
+            .header-controls input { min-width: 100px; flex: 1; }
             .id-card {
                 flex-direction: column;
                 align-items: stretch;
@@ -937,241 +1020,7 @@
                 padding: 16px;
             }
         }
-
-        /* ===== NEW QR MODAL STYLES (injected seamlessly) ===== */
-        .qr-modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(6px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-        .qr-modal-overlay.open {
-            display: flex;
-        }
-        .qr-modal {
-            background: var(--bg-container);
-            border-radius: var(--radius);
-            max-width: 480px;
-            width: 100%;
-            padding: 32px 28px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-            position: relative;
-            max-height: 90vh;
-            overflow-y: auto;
-            transition: background var(--transition), border var(--transition);
-        }
-        .qr-modal-close {
-            position: absolute;
-            top: 12px;
-            right: 16px;
-            background: transparent;
-            border: none;
-            font-size: 1.6rem;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: color var(--transition);
-            line-height: 1;
-        }
-        .qr-modal-close:hover {
-            color: var(--text-primary);
-        }
-        .qr-modal h2 {
-            margin-bottom: 16px;
-            font-weight: 600;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .qr-modal h2 i {
-            color: var(--accent);
-        }
-
-        .qr-display-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 18px;
-        }
-        #qrCodeContainer {
-            background: #fff;
-            padding: 16px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            display: inline-block;
-        }
-        #qrCodeContainer img,
-        #qrCodeContainer canvas {
-            display: block;
-            width: 200px;
-            height: 200px;
-            image-rendering: pixelated;
-        }
-        .qr-status {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-            text-align: center;
-            min-height: 1.8em;
-        }
-        .qr-status .loading {
-            vertical-align: middle;
-            margin-right: 6px;
-        }
-
-        .qr-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 8px;
-        }
-        .qr-actions .btn {
-            min-width: 120px;
-        }
-
-        /* QR mode chooser */
-        .qr-choice-view {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            margin-top: 10px;
-        }
-
-        .qr-choice-subtitle {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            text-align: center;
-            line-height: 1.5;
-            margin-bottom: 4px;
-        }
-
-        .qr-mode-btn {
-            width: 100%;
-            min-height: 64px;
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            background: var(--bg-card);
-            color: var(--text-primary);
-            padding: 14px 18px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            text-align: left;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: all var(--transition);
-        }
-
-        .qr-mode-btn:hover {
-            border-color: var(--accent);
-            transform: translateY(-1px);
-            box-shadow: 0 8px 20px -10px var(--accent-glow);
-        }
-
-        .qr-mode-btn i {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--accent-glow);
-            color: var(--accent);
-            font-size: 1.2rem;
-            flex-shrink: 0;
-        }
-
-        .qr-mode-btn small {
-            display: block;
-            color: var(--text-muted);
-            font-size: 0.78rem;
-            font-weight: 400;
-            margin-top: 3px;
-        }
-
-        .qr-back-btn {
-            margin-top: 10px;
-            align-self: center;
-        }
-
-        /* scanner area inside modal */
-        #qrScannerContainer {
-            width: 100%;
-            max-width: 360px;
-            margin: 0 auto;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #000;
-            min-height: 240px;
-            position: relative;
-        }
-        #qrScannerContainer video {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-        #qrScannerContainer .scanner-placeholder {
-            color: #fff;
-            text-align: center;
-            padding: 60px 20px;
-            font-size: 0.95rem;
-            background: #1e293b;
-            min-height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .qr-toggle-btn {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 40px;
-            padding: 10px 20px;
-            cursor: pointer;
-            color: var(--text-primary);
-            font-weight: 500;
-            transition: all var(--transition);
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .qr-toggle-btn:hover {
-            border-color: var(--accent);
-            background: var(--accent-glow);
-        }
-        .qr-toggle-btn i {
-            color: var(--accent);
-        }
-
-        .qr-divider {
-            width: 100%;
-            text-align: center;
-            border-bottom: 1px solid var(--border-color);
-            line-height: 0.1em;
-            margin: 18px 0 16px;
-        }
-        .qr-divider span {
-            background: var(--bg-container);
-            padding: 0 12px;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-
-        .qr-error {
-            color: var(--danger);
-            font-size: 0.9rem;
-            text-align: center;
-            margin-top: 8px;
-        }
     </style>
-    <meta name="google-site-verification" content="EW_zyixVqq0-JThC-I5D7ryIZjw6xE-TZjUz84TTj3U" />
-<base target="_blank">
 </head>
 <body>
     <div id="app">
@@ -1242,7 +1091,6 @@
                         <button class="btn btn-primary" id="connectBtn">
                             <i class="fas fa-link"></i> <span data-i18n="connect">Connect</span>
                         </button>
-                        <!-- ===== NEW: QR Code button ===== -->
                         <button class="btn btn-primary" id="qrOpenBtn" style="background:var(--success);">
                             <i class="fas fa-qrcode"></i> <span>QR Code / Scan</span>
                         </button>
@@ -1294,9 +1142,7 @@
                         <span data-i18n="secureChat">Secure Chat</span>
                     </div>
                     <div class="chat-messages" id="chatBox"></div>
-
                     <div id="pendingAttachments" class="pending-attachments"></div>
-
                     <div class="chat-input">
                         <input type="text" id="msgInput" placeholder="Type a message..." />
                         <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
@@ -1306,7 +1152,7 @@
         </div>
 
         <div class="footer">
-            <span>&copy; <span id="footerYear">2026</span> WebDrop Pro. All rights reserved.</span>
+            <span>&copy; <span id="footerYear">2025</span> WebDrop Pro. All rights reserved.</span>
             <span>
                 <a href="#" id="termsLink">Terms &amp; Conditions</a>
                 &nbsp;·&nbsp;
@@ -1330,13 +1176,10 @@
     <div class="qr-modal-overlay" id="qrModalOverlay">
         <div class="qr-modal">
             <button class="qr-modal-close" id="qrModalClose" aria-label="Close">&times;</button>
-
             <h2><i class="fas fa-qrcode"></i> <span id="qrModalTitle">Connect via QR</span></h2>
 
-            <!-- Choice shown on EVERY device -->
             <div class="qr-choice-view" id="qrChoiceView">
                 <div class="qr-choice-subtitle">Choose how you want to connect.</div>
-
                 <button class="qr-mode-btn" id="qrChooseShowBtn" type="button">
                     <i class="fas fa-qrcode"></i>
                     <span>
@@ -1344,7 +1187,6 @@
                         <small>Show this device's QR code for the other device to scan.</small>
                     </span>
                 </button>
-
                 <button class="qr-mode-btn" id="qrChooseScanBtn" type="button">
                     <i class="fas fa-camera"></i>
                     <span>Scan QR
@@ -1353,27 +1195,22 @@
                 </button>
             </div>
 
-            <!-- QR generator view -->
             <div class="qr-display-area" id="qrDisplayArea" style="display:none;">
                 <div id="qrCodeContainer">
                     <div style="width:200px;height:200px;display:flex;align-items:center;justify-content:center;background:#f0f0f0;border-radius:8px;color:#999;font-size:0.9rem;">
                         <i class="fas fa-spinner fa-spin"></i> Loading...
                     </div>
                 </div>
-
                 <div class="qr-status" id="qrStatus">Waiting for scan...</div>
-
                 <div class="qr-actions">
                     <button class="btn btn-primary" id="qrRefreshBtn" type="button"><i class="fas fa-redo"></i> Refresh QR</button>
                     <button class="qr-toggle-btn" id="qrToggleScanBtn" type="button"><i class="fas fa-camera"></i> <span>Scan QR</span></button>
                 </div>
-
                 <button class="qr-toggle-btn qr-back-btn" id="qrBackToChoicesBtn" type="button">
                     <i class="fas fa-arrow-left"></i> <span>Back</span>
                 </button>
             </div>
 
-            <!-- Camera scanner view -->
             <div id="qrScannerView" style="display:none;">
                 <div id="qrScannerContainer">
                     <div class="scanner-placeholder">
@@ -1382,7 +1219,6 @@
                     </div>
                 </div>
                 <div id="qrScanError" class="qr-error"></div>
-
                 <div class="qr-actions">
                     <button class="qr-toggle-btn" id="qrBackFromScannerBtn" type="button">
                         <i class="fas fa-arrow-left"></i> <span>Back</span>
@@ -1394,11 +1230,7 @@
 
     <!-- ===== CDN Scripts ===== -->
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
-    <!-- Postbase JS SDK (official postbasejs, browser ESM build) -->
-    <!-- The main application script below imports createClient from postbasejs. -->
-    <!-- QRCode.js for generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- html5-qrcode for scanning -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <script type="module">
@@ -1408,224 +1240,22 @@
             'use strict';
 
             // ================================================================
-            // 1. YOUR POSTBASE CREDENTIALS – REPLACE THESE!
+            // 1. POSTBASE CREDENTIALS (confirmed correct)
             // ================================================================
             const POSTBASE_URL = "https://postbase-production-b4c8.up.railway.app";
             const POSTBASE_ANON_KEY = "pb_anon_IvpWA7o62oJLMAfUSCwYQfCP_4P2scsDYlBcaGqn4GzlDztkcaq8IAds_jdCxz6l";
-            // Get this value from Postbase Dashboard → API Keys → Project ID.
             const POSTBASE_PROJECT_ID = "7933361d-a2da-4747-b5f0-7fdc8c85253d";
 
             // ================================================================
-            // 2. EXISTING CODE (all your original logic – untouched except added QR parts)
+            // 2. i18n
             // ================================================================
-
-            // ---------- i18n (unchanged) ----------
             const i18n = {
-                en: {
-                    deviceId: 'Your Device ID',
-                    active: 'Active',
-                    networkScanner: 'Network Scanner',
-                    connect: 'Connect',
-                    ready: 'Ready to connect',
-                    connectedTo: 'Connected to:',
-                    disconnect: 'Disconnect',
-                    sendDocument: 'Send Document',
-                    sendImages: 'Send Images',
-                    sendVideo: 'Send Video',
-                    sendFolder: 'Send Folder',
-                    secureChat: 'Secure Chat',
-                    systemConnected: 'Secure connection established',
-                    systemClosed: 'Connection closed',
-                    systemSending: 'Sending {name}...',
-                    systemSent: 'Sent: {name}',
-                    systemFolder: 'Sending folder: {name} ({count} files)',
-                    systemFolderSent: 'Folder sent: {name}',
-                    systemError: 'Error sending {name}',
-                    fileDownload: 'Download',
-                    connecting: 'Connecting...',
-                    connected: 'Connected successfully',
-                    failed: 'Connection failed',
-                    pastedTextAttached: 'Pasted text saved as {name}',
-                    removeAttachment: 'Remove attachment',
-                    // QR keys
-                    qrWaiting: 'Waiting for scan...',
-                    qrConnecting: 'Connecting via QR...',
-                    qrConnected: 'Connected! You can close this.',
-                    qrError: 'Error: {msg}',
-                    qrRefresh: 'Refresh QR',
-                    qrScan: 'Scan QR',
-                    qrShowQR: 'Show my QR',
-                },
-                es: {
-                    deviceId: 'Tu ID de dispositivo',
-                    active: 'Activo',
-                    networkScanner: 'Escáner de red',
-                    connect: 'Conectar',
-                    ready: 'Listo para conectar',
-                    connectedTo: 'Conectado a:',
-                    disconnect: 'Desconectar',
-                    sendDocument: 'Enviar documento',
-                    sendImages: 'Enviar imágenes',
-                    sendVideo: 'Enviar video',
-                    sendFolder: 'Enviar carpeta',
-                    secureChat: 'Chat seguro',
-                    systemConnected: 'Conexión segura establecida',
-                    systemClosed: 'Conexión cerrada',
-                    systemSending: 'Enviando {name}...',
-                    systemSent: 'Enviado: {name}',
-                    systemFolder: 'Enviando carpeta: {name} ({count} archivos)',
-                    systemFolderSent: 'Carpeta enviada: {name}',
-                    systemError: 'Error al enviar {name}',
-                    fileDownload: 'Descargar',
-                    connecting: 'Conectando...',
-                    connected: 'Conectado exitosamente',
-                    failed: 'Conexión fallida',
-                    pastedTextAttached: 'Texto pegado guardado como {name}',
-                    removeAttachment: 'Quitar adjunto',
-                    qrWaiting: 'Esperando escaneo...',
-                    qrConnecting: 'Conectando vía QR...',
-                    qrConnected: '¡Conectado! Puedes cerrar esto.',
-                    qrError: 'Error: {msg}',
-                    qrRefresh: 'Refrescar QR',
-                    qrScan: 'Escanear QR',
-                    qrShowQR: 'Mostrar mi QR',
-                },
-                fr: {
-                    deviceId: 'Votre ID d\'appareil',
-                    active: 'Actif',
-                    networkScanner: 'Scanner réseau',
-                    connect: 'Connecter',
-                    ready: 'Prêt à connecter',
-                    connectedTo: 'Connecté à :',
-                    disconnect: 'Déconnecter',
-                    sendDocument: 'Envoyer un document',
-                    sendImages: 'Envoyer des images',
-                    sendVideo: 'Envoyer une vidéo',
-                    sendFolder: 'Envoyer un dossier',
-                    secureChat: 'Chat sécurisé',
-                    systemConnected: 'Connexion sécurisée établie',
-                    systemClosed: 'Connexion fermée',
-                    systemSending: 'Envoi de {name}...',
-                    systemSent: 'Envoyé : {name}',
-                    systemFolder: 'Envoi du dossier : {name} ({count} fichiers)',
-                    systemFolderSent: 'Dossier envoyé : {name}',
-                    systemError: 'Erreur lors de l\'envoi de {name}',
-                    fileDownload: 'Télécharger',
-                    connecting: 'Connexion...',
-                    connected: 'Connecté avec succès',
-                    failed: 'Échec de la connexion',
-                    pastedTextAttached: 'Texte collé enregistré comme {name}',
-                    removeAttachment: 'Supprimer la pièce jointe',
-                    qrWaiting: 'En attente de scan...',
-                    qrConnecting: 'Connexion via QR...',
-                    qrConnected: 'Connecté ! Vous pouvez fermer.',
-                    qrError: 'Erreur : {msg}',
-                    qrRefresh: 'Rafraîchir QR',
-                    qrScan: 'Scanner QR',
-                    qrShowQR: 'Afficher mon QR',
-                },
-                de: {
-                    deviceId: 'Ihre Geräte-ID',
-                    active: 'Aktiv',
-                    networkScanner: 'Netzwerk-Scanner',
-                    connect: 'Verbinden',
-                    ready: 'Bereit zum Verbinden',
-                    connectedTo: 'Verbunden mit:',
-                    disconnect: 'Trennen',
-                    sendDocument: 'Dokument senden',
-                    sendImages: 'Bilder senden',
-                    sendVideo: 'Video senden',
-                    sendFolder: 'Ordner senden',
-                    secureChat: 'Sicherer Chat',
-                    systemConnected: 'Sichere Verbindung hergestellt',
-                    systemClosed: 'Verbindung geschlossen',
-                    systemSending: 'Sende {name}...',
-                    systemSent: 'Gesendet: {name}',
-                    systemFolder: 'Sende Ordner: {name} ({count} Dateien)',
-                    systemFolderSent: 'Ordner gesendet: {name}',
-                    systemError: 'Fehler beim Senden von {name}',
-                    fileDownload: 'Herunterladen',
-                    connecting: 'Verbinde...',
-                    connected: 'Erfolgreich verbunden',
-                    failed: 'Verbindung fehlgeschlagen',
-                    pastedTextAttached: 'Eingefügter Text als {name} gespeichert',
-                    removeAttachment: 'Anhang entfernen',
-                    qrWaiting: 'Warte auf Scan...',
-                    qrConnecting: 'Verbinde via QR...',
-                    qrConnected: 'Verbunden! Sie können schließen.',
-                    qrError: 'Fehler: {msg}',
-                    qrRefresh: 'QR aktualisieren',
-                    qrScan: 'QR scannen',
-                    qrShowQR: 'Mein QR anzeigen',
-                },
-                pt: {
-                    deviceId: 'Seu ID de dispositivo',
-                    active: 'Ativo',
-                    networkScanner: 'Scanner de rede',
-                    connect: 'Conectar',
-                    ready: 'Pronto para conectar',
-                    connectedTo: 'Conectado a:',
-                    disconnect: 'Desconectar',
-                    sendDocument: 'Enviar documento',
-                    sendImages: 'Enviar imagens',
-                    sendVideo: 'Enviar vídeo',
-                    sendFolder: 'Enviar pasta',
-                    secureChat: 'Chat seguro',
-                    systemConnected: 'Conexão segura estabelecida',
-                    systemClosed: 'Conexão encerrada',
-                    systemSending: 'Enviando {name}...',
-                    systemSent: 'Enviado: {name}',
-                    systemFolder: 'Enviando pasta: {name} ({count} arquivos)',
-                    systemFolderSent: 'Pasta enviada: {name}',
-                    systemError: 'Erro ao enviar {name}',
-                    fileDownload: 'Baixar',
-                    connecting: 'Conectando...',
-                    connected: 'Conectado com sucesso',
-                    failed: 'Falha na conexão',
-                    pastedTextAttached: 'Texto colado salvo como {name}',
-                    removeAttachment: 'Remover anexo',
-                    qrWaiting: 'Aguardando escaneamento...',
-                    qrConnecting: 'Conectando via QR...',
-                    qrConnected: 'Conectado! Você pode fechar.',
-                    qrError: 'Erro: {msg}',
-                    qrRefresh: 'Atualizar QR',
-                    qrScan: 'Escanear QR',
-                    qrShowQR: 'Mostrar meu QR',
-                },
-                zh: {
-                    deviceId: '您的设备ID',
-                    active: '活跃',
-                    networkScanner: '网络扫描仪',
-                    connect: '连接',
-                    ready: '准备连接',
-                    connectedTo: '已连接到：',
-                    disconnect: '断开连接',
-                    sendDocument: '发送文档',
-                    sendImages: '发送图片',
-                    sendVideo: '发送视频',
-                    sendFolder: '发送文件夹',
-                    secureChat: '安全聊天',
-                    systemConnected: '安全连接已建立',
-                    systemClosed: '连接已关闭',
-                    systemSending: '正在发送 {name}...',
-                    systemSent: '已发送：{name}',
-                    systemFolder: '正在发送文件夹：{name}（{count} 个文件）',
-                    systemFolderSent: '文件夹已发送：{name}',
-                    systemError: '发送 {name} 时出错',
-                    fileDownload: '下载',
-                    connecting: '连接中...',
-                    connected: '连接成功',
-                    failed: '连接失败',
-                    pastedTextAttached: '粘贴的文本已保存为 {name}',
-                    removeAttachment: '删除附件',
-                    qrWaiting: '等待扫描...',
-                    qrConnecting: '通过QR连接中...',
-                    qrConnected: '已连接！您可以关闭此窗口。',
-                    qrError: '错误：{msg}',
-                    qrRefresh: '刷新QR',
-                    qrScan: '扫描QR',
-                    qrShowQR: '显示我的QR',
-                }
+                en: { deviceId: 'Your Device ID', active: 'Active', networkScanner: 'Network Scanner', connect: 'Connect', ready: 'Ready to connect', connectedTo: 'Connected to:', disconnect: 'Disconnect', sendDocument: 'Send Document', sendImages: 'Send Images', sendVideo: 'Send Video', sendFolder: 'Send Folder', secureChat: 'Secure Chat', systemConnected: 'Secure connection established', systemClosed: 'Connection closed', systemSending: 'Sending {name}...', systemSent: 'Sent: {name}', systemFolder: 'Sending folder: {name} ({count} files)', systemFolderSent: 'Folder sent: {name}', systemError: 'Error sending {name}', fileDownload: 'Download', connecting: 'Connecting...', connected: 'Connected successfully', failed: 'Connection failed', pastedTextAttached: 'Pasted text saved as {name}', removeAttachment: 'Remove attachment', qrWaiting: 'Waiting for scan...', qrConnecting: 'Connecting via QR...', qrConnected: 'Connected! You can close this.', qrError: 'Error: {msg}', qrRefresh: 'Refresh QR', qrScan: 'Scan QR', qrShowQR: 'Show my QR' },
+                es: { deviceId: 'Tu ID de dispositivo', active: 'Activo', networkScanner: 'Escáner de red', connect: 'Conectar', ready: 'Listo para conectar', connectedTo: 'Conectado a:', disconnect: 'Desconectar', sendDocument: 'Enviar documento', sendImages: 'Enviar imágenes', sendVideo: 'Enviar video', sendFolder: 'Enviar carpeta', secureChat: 'Chat seguro', systemConnected: 'Conexión segura establecida', systemClosed: 'Conexión cerrada', systemSending: 'Enviando {name}...', systemSent: 'Enviado: {name}', systemFolder: 'Enviando carpeta: {name} ({count} archivos)', systemFolderSent: 'Carpeta enviada: {name}', systemError: 'Error al enviar {name}', fileDownload: 'Descargar', connecting: 'Conectando...', connected: 'Conectado exitosamente', failed: 'Conexión fallida', pastedTextAttached: 'Texto pegado guardado como {name}', removeAttachment: 'Quitar adjunto', qrWaiting: 'Esperando escaneo...', qrConnecting: 'Conectando vía QR...', qrConnected: '¡Conectado! Puedes cerrar esto.', qrError: 'Error: {msg}', qrRefresh: 'Refrescar QR', qrScan: 'Escanear QR', qrShowQR: 'Mostrar mi QR' },
+                fr: { deviceId: 'Votre ID d\'appareil', active: 'Actif', networkScanner: 'Scanner réseau', connect: 'Connecter', ready: 'Prêt à connecter', connectedTo: 'Connecté à :', disconnect: 'Déconnecter', sendDocument: 'Envoyer un document', sendImages: 'Envoyer des images', sendVideo: 'Envoyer une vidéo', sendFolder: 'Envoyer un dossier', secureChat: 'Chat sécurisé', systemConnected: 'Connexion sécurisée établie', systemClosed: 'Connexion fermée', systemSending: 'Envoi de {name}...', systemSent: 'Envoyé : {name}', systemFolder: 'Envoi du dossier : {name} ({count} fichiers)', systemFolderSent: 'Dossier envoyé : {name}', systemError: 'Erreur lors de l\'envoi de {name}', fileDownload: 'Télécharger', connecting: 'Connexion...', connected: 'Connecté avec succès', failed: 'Échec de la connexion', pastedTextAttached: 'Texte collé enregistré comme {name}', removeAttachment: 'Supprimer la pièce jointe', qrWaiting: 'En attente de scan...', qrConnecting: 'Connexion via QR...', qrConnected: 'Connecté ! Vous pouvez fermer.', qrError: 'Erreur : {msg}', qrRefresh: 'Rafraîchir QR', qrScan: 'Scanner QR', qrShowQR: 'Afficher mon QR' },
+                de: { deviceId: 'Ihre Geräte-ID', active: 'Aktiv', networkScanner: 'Netzwerk-Scanner', connect: 'Verbinden', ready: 'Bereit zum Verbinden', connectedTo: 'Verbunden mit:', disconnect: 'Trennen', sendDocument: 'Dokument senden', sendImages: 'Bilder senden', sendVideo: 'Video senden', sendFolder: 'Ordner senden', secureChat: 'Sicherer Chat', systemConnected: 'Sichere Verbindung hergestellt', systemClosed: 'Verbindung geschlossen', systemSending: 'Sende {name}...', systemSent: 'Gesendet: {name}', systemFolder: 'Sende Ordner: {name} ({count} Dateien)', systemFolderSent: 'Ordner gesendet: {name}', systemError: 'Fehler beim Senden von {name}', fileDownload: 'Herunterladen', connecting: 'Verbinde...', connected: 'Erfolgreich verbunden', failed: 'Verbindung fehlgeschlagen', pastedTextAttached: 'Eingefügter Text als {name} gespeichert', removeAttachment: 'Anhang entfernen', qrWaiting: 'Warte auf Scan...', qrConnecting: 'Verbinde via QR...', qrConnected: 'Verbunden! Sie können schließen.', qrError: 'Fehler: {msg}', qrRefresh: 'QR aktualisieren', qrScan: 'QR scannen', qrShowQR: 'Mein QR anzeigen' },
+                pt: { deviceId: 'Seu ID de dispositivo', active: 'Ativo', networkScanner: 'Scanner de rede', connect: 'Conectar', ready: 'Pronto para conectar', connectedTo: 'Conectado a:', disconnect: 'Desconectar', sendDocument: 'Enviar documento', sendImages: 'Enviar imagens', sendVideo: 'Enviar vídeo', sendFolder: 'Enviar pasta', secureChat: 'Chat seguro', systemConnected: 'Conexão segura estabelecida', systemClosed: 'Conexão encerrada', systemSending: 'Enviando {name}...', systemSent: 'Enviado: {name}', systemFolder: 'Enviando pasta: {name} ({count} arquivos)', systemFolderSent: 'Pasta enviada: {name}', systemError: 'Erro ao enviar {name}', fileDownload: 'Baixar', connecting: 'Conectando...', connected: 'Conectado com sucesso', failed: 'Falha na conexão', pastedTextAttached: 'Texto colado salvo como {name}', removeAttachment: 'Remover anexo', qrWaiting: 'Aguardando escaneamento...', qrConnecting: 'Conectando via QR...', qrConnected: 'Conectado! Você pode fechar.', qrError: 'Erro: {msg}', qrRefresh: 'Atualizar QR', qrScan: 'Escanear QR', qrShowQR: 'Mostrar meu QR' },
+                zh: { deviceId: '您的设备ID', active: '活跃', networkScanner: '网络扫描仪', connect: '连接', ready: '准备连接', connectedTo: '已连接到：', disconnect: '断开连接', sendDocument: '发送文档', sendImages: '发送图片', sendVideo: '发送视频', sendFolder: '发送文件夹', secureChat: '安全聊天', systemConnected: '安全连接已建立', systemClosed: '连接已关闭', systemSending: '正在发送 {name}...', systemSent: '已发送：{name}', systemFolder: '正在发送文件夹：{name}（{count} 个文件）', systemFolderSent: '文件夹已发送：{name}', systemError: '发送 {name} 时出错', fileDownload: '下载', connecting: '连接中...', connected: '连接成功', failed: '连接失败', pastedTextAttached: '粘贴的文本已保存为 {name}', removeAttachment: '删除附件', qrWaiting: '等待扫描...', qrConnecting: '通过QR连接中...', qrConnected: '已连接！您可以关闭此窗口。', qrError: '错误：{msg}', qrRefresh: '刷新QR', qrScan: '扫描QR', qrShowQR: '显示我的QR' }
             };
 
             let currentLang = 'en';
@@ -1651,18 +1281,10 @@
                 if (msgPh) msgPh.placeholder = t('secureChat') + '...';
                 const st = document.getElementById('statusText');
                 if (st && !st.dataset.custom) st.textContent = t('ready');
-                // QR modal dynamic texts
-                const title = document.getElementById('qrModalTitle');
-                if (title) title.textContent = isMobileDevice() ? 'Scan QR Code' : t('qrShowQR');
-                const status = document.getElementById('qrStatus');
-                if (status && !status.dataset.manual) status.textContent = t('qrWaiting');
-                const refreshBtn = document.getElementById('qrRefreshBtn');
-                if (refreshBtn) refreshBtn.innerHTML = `<i class="fas fa-redo"></i> ${t('qrRefresh')}`;
-                const scanBtn = document.getElementById('qrToggleScanBtn');
-                if (scanBtn) {
-                    const span = scanBtn.querySelector('span');
-                    if (span) span.textContent = t('qrScan');
-                }
+            }
+
+            function isMobileDevice() {
+                return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
             }
 
             document.getElementById('langSelect').addEventListener('change', function() {
@@ -1670,7 +1292,9 @@
                 updateUI();
             });
 
-            // ---------- Theme ----------
+            // ================================================================
+            // 3. Theme
+            // ================================================================
             const themeToggle = document.getElementById('themeToggle');
             const app = document.getElementById('app');
             let dark = false;
@@ -1678,9 +1302,7 @@
             function setTheme(darkMode) {
                 dark = darkMode;
                 app.setAttribute('data-theme', dark ? 'dark' : 'light');
-                themeToggle.innerHTML = dark ?
-                    '<i class="fas fa-sun"></i>' :
-                    '<i class="fas fa-moon"></i>';
+                themeToggle.innerHTML = dark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
                 localStorage.setItem('webdrop-theme', dark ? 'dark' : 'light');
             }
 
@@ -1691,10 +1313,11 @@
 
             themeToggle.addEventListener('click', () => setTheme(!dark));
 
-            // ---------- Footer year ----------
+            // ================================================================
+            // 4. Footer year & Device name
+            // ================================================================
             document.getElementById('footerYear').textContent = new Date().getFullYear();
 
-            // ---------- Device name ----------
             const deviceNameInput = document.getElementById('deviceNameInput');
             const avatarDisplay = document.getElementById('avatarDisplay');
 
@@ -1703,7 +1326,9 @@
                 const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
                 avatarDisplay.textContent = initials || 'DV';
             }
+
             deviceNameInput.addEventListener('input', updateAvatar);
+
             const savedName = localStorage.getItem('webdrop-deviceName');
             if (savedName) {
                 deviceNameInput.value = savedName;
@@ -1714,14 +1339,15 @@
                 updateAvatar();
             });
 
-            // ---------- Cookie Consent ----------
+            // ================================================================
+            // 5. Cookie Consent
+            // ================================================================
             const cookieConsent = document.getElementById('cookieConsent');
             const acceptCookiesBtn = document.getElementById('acceptCookiesBtn');
 
             if (localStorage.getItem('cookiesAccepted') === 'true') {
                 cookieConsent.classList.add('hidden');
             }
-
             acceptCookiesBtn.addEventListener('click', function() {
                 localStorage.setItem('cookiesAccepted', 'true');
                 cookieConsent.classList.add('hidden');
@@ -1730,11 +1356,13 @@
             document.querySelectorAll('#termsLink, #cookieTermsLink, #privacyLink, #cookiePrivacyLink').forEach(el => {
                 el.addEventListener('click', function(e) {
                     e.preventDefault();
-                    alert('Terms and Conditions & Privacy Policy pages would be displayed here.\n(Full legal text can be added as a modal or separate page.)');
+                    alert('Terms and Conditions & Privacy Policy pages would be displayed here.');
                 });
             });
 
-            // ---------- PeerJS App (unchanged except we expose peer reference) ----------
+            // ================================================================
+            // 6. DOM refs
+            // ================================================================
             const myIdDisplay = document.getElementById('myIdDisplay');
             const copyIdBtn = document.getElementById('copyIdBtn');
             const targetIdInput = document.getElementById('targetId');
@@ -1757,27 +1385,25 @@
 
             let pendingAttachments = [];
             const PASTE_CHAR_THRESHOLD = 300;
-
             let peer = null;
             let conn = null;
             let myId = '';
 
-            // ---------- Helpers ----------
+            // ================================================================
+            // 7. Helpers
+            // ================================================================
             function addMessage(sender, text, type) {
                 const div = document.createElement('div');
                 div.className = `message ${type}`;
-
                 if (type === 'system') {
                     div.textContent = text;
                 } else {
                     const header = document.createElement('div');
                     header.className = 'message-header';
-
                     const nameSpan = document.createElement('span');
                     nameSpan.className = 'message-sender';
                     nameSpan.textContent = `${sender}:`;
                     header.appendChild(nameSpan);
-
                     if (type === 'received') {
                         const copyBtn = document.createElement('button');
                         copyBtn.className = 'copy-msg-btn';
@@ -1816,15 +1442,12 @@
                         });
                         header.appendChild(copyBtn);
                     }
-
                     div.appendChild(header);
-
                     const content = document.createElement('div');
                     content.className = 'message-content';
                     content.textContent = text;
                     div.appendChild(content);
                 }
-
                 chatBox.appendChild(div);
                 chatBox.scrollTop = chatBox.scrollHeight;
             }
@@ -1862,31 +1485,24 @@
             function renderPendingAttachments() {
                 const container = document.getElementById('pendingAttachments');
                 container.innerHTML = '';
-
                 pendingAttachments.forEach((file, index) => {
                     const badge = document.createElement('div');
                     badge.className = 'pending-attachment';
-
                     const icon = document.createElement('i');
                     icon.className = 'fas fa-file-alt';
                     badge.appendChild(icon);
-
                     const info = document.createElement('div');
                     info.className = 'pending-attachment-info';
-
                     const nameEl = document.createElement('div');
                     nameEl.className = 'pending-attachment-name';
                     nameEl.textContent = file.name;
                     nameEl.title = file.name;
                     info.appendChild(nameEl);
-
                     const sizeEl = document.createElement('div');
                     sizeEl.className = 'pending-attachment-size';
                     sizeEl.textContent = formatFileSize(file.size);
                     info.appendChild(sizeEl);
-
                     badge.appendChild(info);
-
                     const removeBtn = document.createElement('button');
                     removeBtn.className = 'pending-attachment-remove';
                     removeBtn.title = t('removeAttachment');
@@ -1897,7 +1513,6 @@
                         renderPendingAttachments();
                     });
                     badge.appendChild(removeBtn);
-
                     container.appendChild(badge);
                 });
             }
@@ -1905,29 +1520,25 @@
             msgInput.addEventListener('paste', function(e) {
                 const clipboardData = e.clipboardData || window.clipboardData;
                 if (!clipboardData) return;
-
                 const pastedText = clipboardData.getData('text');
                 if (!pastedText) return;
-
                 const charCount = pastedText.length;
                 const lineCount = pastedText.split(/\r\n|\r|\n/).length;
-
                 if (charCount > PASTE_CHAR_THRESHOLD || lineCount > 1) {
                     e.preventDefault();
-
                     const timestamp = Date.now();
                     const filename = `shared-text-${timestamp}.txt`;
-
                     const blob = new Blob([pastedText], { type: 'text/plain;charset=utf-8' });
                     const file = new File([blob], filename, { type: 'text/plain;charset=utf-8' });
-
                     pendingAttachments.push(file);
                     renderPendingAttachments();
                     systemMessage('pastedTextAttached', { name: filename });
                 }
             });
 
-            // ---------- Radar simulation ----------
+            // ================================================================
+            // 8. Radar simulation
+            // ================================================================
             let radarInterval = null;
 
             function startRadar() {
@@ -1965,47 +1576,39 @@
             }
             startRadar();
 
-            // ---------- Refresh / Reconnect ----------
             function refreshConnection() {
                 if (refreshBtn.disabled) return;
-
                 refreshBtn.disabled = true;
                 refreshBtn.classList.add('spinning');
-
                 if (conn) {
                     conn.close();
                     conn = null;
                 }
-
                 if (peer) {
                     peer.destroy();
                     peer = null;
                 }
-
                 resetUI();
-
                 radarWrapper.querySelectorAll('.radar-device').forEach(el => el.remove());
                 peersCount.textContent = '0 peers online';
-
                 setTimeout(() => {
                     initPeer();
-
                     if (radarInterval) {
                         clearInterval(radarInterval);
                         radarInterval = null;
                     }
                     startRadar();
-
                     setTimeout(() => {
                         refreshBtn.classList.remove('spinning');
                         refreshBtn.disabled = false;
                     }, 900);
                 }, 400);
             }
-
             refreshBtn.addEventListener('click', refreshConnection);
 
-            // ---------- Peer init (slightly modified to expose peer globally for QR) ----------
+            // ================================================================
+            // 9. PeerJS init
+            // ================================================================
             function initPeer() {
                 myId = Math.floor(1000 + Math.random() * 9000).toString();
                 myIdDisplay.textContent = myId;
@@ -2020,20 +1623,22 @@
                 });
 
                 peer.on('open', (id) => {
-                    console.log('Peer open:', id);
+                    console.log('Peer open with ID:', id);
                     statusText.textContent = t('ready');
                 });
 
                 peer.on('connection', (incoming) => {
+                    console.log('Incoming connection from:', incoming.peer);
                     if (conn) {
+                        console.warn('Already have a connection, rejecting incoming.');
                         incoming.close();
                         return;
                     }
                     conn = incoming;
                     conn.on('open', () => {
+                        console.log('Incoming connection opened from', conn.peer);
                         showTransferUI(conn.peer);
                         systemMessage('systemConnected');
-                        // Close QR modal if open
                         closeQRModal();
                     });
                     conn.on('data', (data) => handleIncomingData(data));
@@ -2062,82 +1667,129 @@
                 });
             }
 
-            // ---------- Connect to peer ----------
-            function connectToPeer(targetId) {
-                if (!peer) return;
-                if (conn) {
-                    conn.close();
-                    resetUI();
-                }
-                statusText.innerHTML = `<span class="loading"></span> ${t('connecting')}`;
-                statusText.dataset.custom = 'true';
-                statusText.style.color = '';
+            // ================================================================
+            // 10. connectToPeer — SHARED by manual ID + QR scan
+            // ================================================================
+            async function connectToPeer(targetId) {
+                console.log('connectToPeer called with:', targetId);
 
-                const target = targetId.trim();
-                if (!target) {
+                if (!targetId || !targetId.trim()) {
+                    console.warn('connectToPeer: invalid targetId');
                     statusText.textContent = t('failed');
                     statusText.style.color = 'var(--danger)';
                     return;
                 }
 
-                conn = peer.connect(target);
-                conn.on('open', () => {
-                    showTransferUI(conn.peer);
-                    systemMessage('systemConnected');
-                    statusText.textContent = t('connected');
-                    statusText.dataset.custom = 'false';
-                });
-                conn.on('data', (data) => handleIncomingData(data));
-                conn.on('close', () => {
-                    systemMessage('systemClosed');
-                    resetUI();
-                });
-                conn.on('error', (err) => {
-                    console.error('connect error:', err);
+                targetId = targetId.trim();
+
+                // Wait for peer to be ready
+                if (!peer || !peer.id) {
+                    console.log('Local peer not ready. Waiting...');
+                    let waited = 0;
+                    while ((!peer || !peer.id) && waited < 5000) {
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                        waited += 200;
+                    }
+                    if (!peer || !peer.id) {
+                        console.error('PeerJS not ready after waiting');
+                        statusText.textContent = t('failed');
+                        statusText.style.color = 'var(--danger)';
+                        return;
+                    }
+                }
+
+                // Already connected to same peer?
+                try {
+                    if (conn && conn.open && conn.peer === targetId) {
+                        console.log('Already connected to', targetId);
+                        showTransferUI(conn.peer);
+                        statusText.textContent = t('connected');
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Error checking existing conn:', e);
+                }
+
+                // Close old connection if exists
+                if (conn) {
+                    try { conn.close(); } catch (e) { /* ignore */ }
+                    conn = null;
+                }
+
+                statusText.innerHTML = `<span class="loading"></span> ${t('connecting')}`;
+                statusText.dataset.custom = 'true';
+                statusText.style.color = '';
+
+                console.log('PeerJS ready:', !!peer, 'local id:', peer ? peer.id : null);
+                console.log('Starting PeerJS connection to', targetId);
+
+                try {
+                    const newConn = peer.connect(targetId, { reliable: true });
+                    conn = newConn;
+
+                    newConn.on('open', () => {
+                        console.log('✅ PeerJS connection opened:', conn.peer);
+                        showTransferUI(conn.peer);
+                        systemMessage('systemConnected');
+                        statusText.textContent = t('connected');
+                        statusText.dataset.custom = 'false';
+                    });
+
+                    newConn.on('data', (data) => handleIncomingData(data));
+
+                    newConn.on('close', () => {
+                        console.log('Connection closed with', targetId);
+                        systemMessage('systemClosed');
+                        resetUI();
+                    });
+
+                    newConn.on('error', (err) => {
+                        console.error('❌ PeerJS connection error:', err);
+                        statusText.textContent = t('failed');
+                        statusText.style.color = 'var(--danger)';
+                        conn = null;
+                    });
+
+                } catch (err) {
+                    console.error('connectToPeer threw:', err);
                     statusText.textContent = t('failed');
                     statusText.style.color = 'var(--danger)';
                     conn = null;
-                });
+                }
             }
 
-            // ---------- Reliable file-transfer state ----------
+            // ================================================================
+            // 11. File transfer (chunked)
+            // ================================================================
             const incomingTransfers = new Map();
 
             function waitForConnectionOpen(connection, timeout = 15000) {
                 return new Promise((resolve, reject) => {
                     if (!connection) return reject(new Error('No active connection.'));
                     if (connection.open) return resolve();
-
                     let settled = false;
                     const finish = (fn, value) => {
                         if (settled) return;
                         settled = true;
                         clearTimeout(timer);
-                        connection.off?.('open', onOpen);
-                        connection.off?.('error', onError);
-                        connection.off?.('close', onClose);
                         fn(value);
                     };
                     const onOpen = () => finish(resolve);
                     const onError = (err) => finish(reject, err || new Error('Connection error.'));
-                    const onClose = () => finish(reject, new Error('Connection closed before transfer started.'));
-                    const timer = setTimeout(() => finish(reject, new Error('Connection is still opening. Please try again.')), timeout);
-
+                    const onClose = () => finish(reject, new Error('Connection closed before transfer.'));
+                    const timer = setTimeout(() => finish(reject, new Error('Connection timeout.')), timeout);
                     connection.on('open', onOpen);
                     connection.on('error', onError);
                     connection.on('close', onClose);
                 });
             }
 
-            // ---------- Handle incoming data ----------
             function handleIncomingData(data) {
                 if (!data) return;
-
                 if (data.type === 'text') {
                     addMessage('Peer', data.payload, 'received');
                     return;
                 }
-
                 if (data.type === 'file-start') {
                     incomingTransfers.set(data.transferId, {
                         filename: data.filename || 'file',
@@ -2150,33 +1802,23 @@
                     });
                     return;
                 }
-
                 if (data.type === 'file-chunk') {
                     receiveFileChunk(data);
                     return;
                 }
-
                 if (data.type === 'file' || data.type === 'file-complete') {
-                    // Backward compatibility with older WebDrop clients.
                     receiveFile(data);
                     return;
                 }
-
-                console.warn('Unknown data type', data);
             }
 
             function receiveFileChunk(data) {
                 const transfer = incomingTransfers.get(data.transferId);
-                if (!transfer) {
-                    console.warn('Received a file chunk for an unknown transfer:', data.transferId);
-                    return;
-                }
-
+                if (!transfer) return;
                 if (!transfer.chunks[data.chunkIndex]) {
                     transfer.chunks[data.chunkIndex] = data.payload;
                     transfer.receivedChunks += 1;
                 }
-
                 if (transfer.receivedChunks >= transfer.totalChunks) {
                     const parts = transfer.chunks.map(part =>
                         part instanceof ArrayBuffer ? part : new Uint8Array(part).buffer
@@ -2187,7 +1829,6 @@
                 }
             }
 
-            // ---------- Receive legacy file ----------
             function receiveFile(data) {
                 const payload = data.payload;
                 if (payload instanceof ArrayBuffer) {
@@ -2195,12 +1836,7 @@
                     showReceivedBlob(blob, data.filename || 'file', data.filetype, data.filesize);
                     return;
                 }
-
-                if (typeof payload !== 'string') {
-                    console.error('Invalid payload:', payload);
-                    return;
-                }
-
+                if (typeof payload !== 'string') return;
                 if (payload.startsWith('data:')) {
                     fetch(payload)
                         .then(res => res.blob())
@@ -2217,7 +1853,6 @@
                 const mimeType = blob.type || filetype || 'application/octet-stream';
                 const msgDiv = document.createElement('div');
                 msgDiv.className = 'message received';
-
                 const info = document.createElement('div');
                 info.innerHTML = `<strong><i class="fas fa-paperclip"></i> ${escapeHtml(filename)}</strong>`;
                 if (filesize) {
@@ -2225,7 +1860,6 @@
                     info.innerHTML += `<div style="font-size:0.75rem;color:var(--text-muted);">${size} KB</div>`;
                 }
                 msgDiv.appendChild(info);
-
                 const link = document.createElement('a');
                 link.href = url;
                 link.download = filename;
@@ -2233,7 +1867,6 @@
                 link.style.cssText = 'margin-top:8px;padding:6px 16px;font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;';
                 link.innerHTML = `<i class="fas fa-download"></i> ${t('fileDownload')}`;
                 msgDiv.appendChild(link);
-
                 if (mimeType.startsWith('image/')) {
                     const img = document.createElement('img');
                     img.src = url;
@@ -2248,22 +1881,24 @@
                     vid.style.maxHeight = '160px';
                     msgDiv.appendChild(vid);
                 }
-
                 chatBox.appendChild(msgDiv);
                 chatBox.scrollTop = chatBox.scrollHeight;
             }
 
-            // ---------- Send file reliably in chunks ----------
+            function escapeHtml(value) {
+                return String(value).replace(/[&<>'"]/g, ch => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                }[ch]));
+            }
+
             async function sendFile(file, metadata) {
                 if (!conn) {
                     systemMessage('systemError', { name: file.name });
                     return;
                 }
-
                 try {
                     await waitForConnectionOpen(conn);
-
-                    const CHUNK_SIZE = 48 * 1024; // conservative size for mobile WebRTC data channels
+                    const CHUNK_SIZE = 48 * 1024;
                     const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
                     const transferId = generateUUID();
                     const sendName = metadata?.relativePath || metadata?.filename || file.name;
@@ -2282,7 +1917,6 @@
                         const start = index * CHUNK_SIZE;
                         const end = Math.min(start + CHUNK_SIZE, file.size);
                         const buffer = await file.slice(start, end).arrayBuffer();
-
                         conn.send({
                             type: 'file-chunk',
                             transferId,
@@ -2290,8 +1924,6 @@
                             totalChunks,
                             payload: buffer
                         });
-
-                        // Give slower mobile browsers/WebRTC stacks time to drain the queue.
                         if (index % 8 === 0) {
                             await new Promise(resolve => setTimeout(resolve, 8));
                         }
@@ -2305,10 +1937,8 @@
                 }
             }
 
-            // ---------- File input handlers ----------
             function handleFiles(files, label) {
-                if (!conn) return;
-                if (!files.length) return;
+                if (!conn || !files.length) return;
                 for (const file of files) {
                     systemMessage('systemSending', { name: file.name });
                     sendFile(file, { label: label || 'file' });
@@ -2348,19 +1978,15 @@
 
             function sendMessage() {
                 const text = msgInput.value.trim();
-
                 if ((!text && pendingAttachments.length === 0) || !conn) return;
-
                 for (const file of pendingAttachments) {
                     systemMessage('systemSending', { name: file.name });
                     sendFile(file, { label: 'pasted-text', source: 'paste-intercept' });
                 }
-
                 if (text) {
                     conn.send({ type: 'text', payload: text });
                     addMessage('Me', text, 'sent');
                 }
-
                 pendingAttachments = [];
                 renderPendingAttachments();
                 msgInput.value = '';
@@ -2371,7 +1997,6 @@
                 if (e.key === 'Enter') sendMessage();
             });
 
-            // ---------- Connect / Disconnect ----------
             connectBtn.addEventListener('click', function() {
                 const target = targetIdInput.value.trim();
                 if (target) connectToPeer(target);
@@ -2385,7 +2010,6 @@
                 }
             });
 
-            // ---------- Copy ID ----------
             copyIdBtn.addEventListener('click', function() {
                 const id = myIdDisplay.textContent;
                 if (navigator.clipboard) {
@@ -2408,10 +2032,8 @@
             });
 
             // ================================================================
-            // 3. NEW QR CODE LOGIC (injected)
+            // 12. QR MODAL LOGIC
             // ================================================================
-
-            // ---------- DOM refs for QR modal ----------
             const qrModalOverlay = document.getElementById('qrModalOverlay');
             const qrModalClose = document.getElementById('qrModalClose');
             const qrOpenBtn = document.getElementById('qrOpenBtn');
@@ -2428,51 +2050,35 @@
             const qrScannerView = document.getElementById('qrScannerView');
             const qrBackToChoicesBtn = document.getElementById('qrBackToChoicesBtn');
             const qrBackFromScannerBtn = document.getElementById('qrBackFromScannerBtn');
+            const qrModalTitle = document.getElementById('qrModalTitle');
 
-            // ---------- Postbase client ----------
             let postbaseClient = null;
             let activeSessionId = null;
             let activeSubscription = null;
             let qrCodeInstance = null;
             let html5QrCode = null;
-            let isScanning = false;
+            let scannerActive = false;
             let isQrGenerating = false;
 
-            // ===== Postbase client initialization =====
+            // ===== Postbase init =====
             function initPostbase() {
-                if (!POSTBASE_URL || POSTBASE_URL === "YOUR_POSTBASE_PROJECT_URL") {
-                    console.error("Postbase URL not configured.");
-                    return null;
-                }
-
-                if (!POSTBASE_ANON_KEY || POSTBASE_ANON_KEY === "YOUR_POSTBASE_ANON_KEY") {
-                    console.error("Postbase anon key not configured.");
-                    return null;
-                }
-
-                if (!POSTBASE_PROJECT_ID || POSTBASE_PROJECT_ID === "YOUR_POSTBASE_PROJECT_ID") {
-                    console.error("Postbase project ID not configured. Get it from Postbase Dashboard → API Keys.");
-                    return null;
-                }
-
+                if (!POSTBASE_URL) { console.error("Postbase URL missing."); return null; }
+                if (!POSTBASE_ANON_KEY) { console.error("Postbase anon key missing."); return null; }
+                if (!POSTBASE_PROJECT_ID) { console.error("Postbase project ID missing."); return null; }
                 try {
-                    return createClient(
-                        POSTBASE_URL,
-                        POSTBASE_ANON_KEY,
-                        { projectId: POSTBASE_PROJECT_ID }
-                    );
+                    return createClient(POSTBASE_URL, POSTBASE_ANON_KEY, {
+                        projectId: POSTBASE_PROJECT_ID
+                    });
                 } catch (e) {
-                    console.error("Failed to initialize Postbase client:", e);
+                    console.error("Failed to init Postbase:", e);
                     return null;
                 }
             }
 
-            // ---------- Generate UUID v4 (fallback) ----------
             function generateUUID() {
                 if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                     return crypto.randomUUID();
                 }
-                // fallback
                 return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                     const r = Math.random() * 16 | 0;
                     const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -2480,7 +2086,7 @@
                 });
             }
 
-            // ---------- Generate QR session ----------
+            // ===== Generate QR session =====
             async function generateQRSession() {
                 if (isQrGenerating) return;
                 isQrGenerating = true;
@@ -2495,10 +2101,9 @@
                 }
 
                 const sessionId = generateUUID();
-                const desktopPeerId = myId; // our own PeerJS ID
+                const desktopPeerId = myId;
 
                 try {
-                    // Insert session
                     const { error } = await client.from('device_sessions').insert({
                         id: sessionId,
                         status: 'pending',
@@ -2509,12 +2114,9 @@
 
                     activeSessionId = sessionId;
 
-                    // Generate QR data: we encode sessionId + desktopPeerId
                     const qrData = JSON.stringify({ sessionId, peerId: desktopPeerId });
 
-                    // Clear previous QR
                     qrCodeContainer.innerHTML = '';
-                    // Create QR code using qrcode.js
                     qrCodeInstance = new QRCode(qrCodeContainer, {
                         text: qrData,
                         width: 200,
@@ -2526,14 +2128,14 @@
 
                     qrStatus.textContent = t('qrWaiting');
                     qrStatus.dataset.manual = 'true';
+                    qrStatus.style.color = '';
 
-                    // PostbaseJS does not expose the old `.from(...).on(...)` API.
-                    // Poll the session instead so the QR flow works with the current SDK.
                     if (activeSubscription) {
                         clearInterval(activeSubscription);
                         activeSubscription = null;
                     }
 
+                    // Poll for connection status
                     activeSubscription = setInterval(async () => {
                         try {
                             const { data, error } = await client
@@ -2541,23 +2143,17 @@
                                 .select('*')
                                 .eq('id', sessionId)
                                 .limit(1);
-
                             if (error) return;
-
                             const row = Array.isArray(data) ? data[0] : data;
                             if (row && row.status === 'connected') {
                                 qrStatus.textContent = t('qrConnected');
                                 qrStatus.style.color = 'var(--success)';
-
                                 clearInterval(activeSubscription);
                                 activeSubscription = null;
-
-                                setTimeout(() => {
-                                    closeQRModal();
-                                }, 1500);
+                                setTimeout(() => { closeQRModal(); }, 1500);
                             }
                         } catch (pollError) {
-                            console.warn('Postbase session poll error:', pollError);
+                            console.warn('Postbase poll error:', pollError);
                         }
                     }, 1500);
 
@@ -2570,42 +2166,34 @@
                 }
             }
 
-            // ---------- Refresh QR ----------
             function refreshQR() {
                 if (activeSubscription) {
                     clearInterval(activeSubscription);
                     activeSubscription = null;
                 }
-                if (activeSessionId) {
-                    // Optional: delete old session from DB? Not required, but we can ignore.
-                    activeSessionId = null;
-                }
+                activeSessionId = null;
                 qrStatus.style.color = '';
                 qrScanError.textContent = '';
                 generateQRSession();
             }
 
-            // ---------- Close QR modal ----------
             function closeQRModal() {
                 qrModalOverlay.classList.remove('open');
-                // Stop scanner if active
                 stopScanner();
-                // Unsubscribe from real-time
                 if (activeSubscription) {
                     clearInterval(activeSubscription);
                     activeSubscription = null;
                 }
-                // Clear any error
                 qrScanError.textContent = '';
-                // Reset status style
                 qrStatus.style.color = '';
-                // If we have a connection, ensure UI is updated
-                if (conn) {
+                qrChoiceView.style.display = 'flex';
+                qrDisplayArea.style.display = 'none';
+                qrScannerView.style.display = 'none';
+                if (conn && conn.open) {
                     showTransferUI(conn.peer);
                 }
             }
 
-            // ---------- QR mode selection ----------
             function openQRModal() {
                 qrModalOverlay.classList.add('open');
                 showQRChoices();
@@ -2630,7 +2218,6 @@
                 qrStatus.style.color = '';
                 qrModalTitle.textContent = 'Show my QR';
 
-                // Always generate a fresh session when entering this mode.
                 if (activeSessionId) {
                     if (activeSubscription) {
                         clearInterval(activeSubscription);
@@ -2641,10 +2228,9 @@
                 await generateQRSession();
             }
 
-            // ---------- Camera scanner ----------
+            // ===== Camera scanner =====
             async function startScannerMode() {
                 stopScanner();
-
                 qrChoiceView.style.display = 'none';
                 qrDisplayArea.style.display = 'none';
                 qrScannerView.style.display = 'block';
@@ -2653,9 +2239,8 @@
 
                 try {
                     if (!window.Html5Qrcode) {
-                        throw new Error('QR scanner library failed to load. Please refresh the page.');
+                        throw new Error('QR scanner library failed to load.');
                     }
-
                     html5QrCode = new Html5Qrcode('qrScannerContainer');
                     const config = {
                         fps: 10,
@@ -2663,22 +2248,15 @@
                         aspectRatio: 1.0,
                         rememberLastUsedCamera: true
                     };
-
-                    // The camera request is made directly from the user's button action.
-                    // environment = rear camera on phones where supported.
                     await html5QrCode.start(
                         { facingMode: { exact: 'environment' } },
                         config,
                         onScanSuccess,
                         onScanError
                     );
-
                     scannerActive = true;
                 } catch (firstErr) {
-                    console.warn('Rear camera start failed, trying default camera:', firstErr);
-
-                    // Some browsers (especially desktop Safari/older Chromium) reject
-                    // the exact-facingMode constraint. Re-create the scanner and retry.
+                    console.warn('Rear camera failed, trying default:', firstErr);
                     try {
                         if (html5QrCode) {
                             try { await html5QrCode.clear(); } catch (_) {}
@@ -2690,40 +2268,22 @@
                             aspectRatio: 1.0,
                             rememberLastUsedCamera: true
                         };
-
                         const cameras = await Html5Qrcode.getCameras();
                         if (!cameras || !cameras.length) {
-                            throw new Error('No camera was found on this device.');
+                            throw new Error('No camera found.');
                         }
-
-                        // Prefer a rear camera when the browser exposes labels.
                         const rear = cameras.find(c => /back|rear|environment/i.test(c.label));
                         const cameraId = (rear || cameras[0]).id;
-
-                        await html5QrCode.start(
-                            cameraId,
-                            config,
-                            onScanSuccess,
-                            onScanError
-                        );
-
+                        await html5QrCode.start(cameraId, config, onScanSuccess, onScanError);
                         scannerActive = true;
                     } catch (secondErr) {
                         console.error('Camera start failed:', secondErr);
-                        const message = secondErr?.message || firstErr?.message || 'Unable to open the camera.';
-                        qrScanError.innerHTML =
-                            '<strong>Camera could not be opened.</strong><br>' +
-                            escapeHtml(message) +
-                            '<br><br>Make sure this site is using HTTPS and that your browser has camera permission.';
+                        const message = secondErr?.message || firstErr?.message || 'Unable to open camera.';
+                        qrScanError.innerHTML = '<strong>Camera could not be opened.</strong><br>' +
+                            escapeHtml(message) + '<br><br>Make sure HTTPS is enabled and camera permission granted.';
                         scannerActive = false;
                     }
                 }
-            }
-
-            function escapeHtml(value) {
-                return String(value).replace(/[&<>'"]/g, ch => ({
-                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-                }[ch]));
             }
 
             async function stopScanner() {
@@ -2733,103 +2293,108 @@
                             await html5QrCode.stop();
                         }
                     } catch (_) {}
-                    try {
-                        await html5QrCode.clear();
-                    } catch (_) {}
+                    try { await html5QrCode.clear(); } catch (_) {}
                     html5QrCode = null;
                 }
                 scannerActive = false;
             }
 
-            // ---------- Close QR modal ----------
-            function closeQRModal() {
-                qrModalOverlay.classList.remove('open');
-                stopScanner();
-
-                if (activeSubscription) {
-                    clearInterval(activeSubscription);
-                    activeSubscription = null;
-                }
-
-                qrScanError.textContent = '';
-                qrStatus.style.color = '';
-                qrChoiceView.style.display = 'flex';
-                qrDisplayArea.style.display = 'none';
-                qrScannerView.style.display = 'none';
-
-                if (conn) {
-                    showTransferUI(conn.peer);
-                }
-            }
-
-            // ---------- Scan success handler ----------
+            // ===== ★ KEY FIX: QR scan success → connectToPeer + update Postbase session =====
             async function onScanSuccess(decodedText) {
-                // QR scanning only discovers the other device's PeerJS ID.
-                // After that, deliberately use the EXACT SAME connection path
-                // as manual ID entry, because manual entry is the known-good
-                // connection path for text and file transfers.
+                console.log('QR decoded:', decodedText);
+
+                // Stop scanner but DON'T touch PeerJS
                 await stopScanner();
 
                 let peerId = null;
+                let sessionId = null;
+
                 try {
                     const data = JSON.parse(decodedText);
                     peerId = data.peerId || data.targetPeerId || null;
+                    sessionId = data.sessionId || null;
                 } catch (e) {
                     const plain = String(decodedText || '').trim();
-                    if (/^\d{4,10}$/.test(plain)) peerId = plain;
+                    if (/^[A-Za-z0-9\-_]{2,64}$/.test(plain)) peerId = plain;
                 }
 
-                if (!peerId) {
-                    qrScanError.textContent = 'Invalid QR data. Missing peer ID.';
-                    return;
-                }
+                console.log('QR target peer ID:', peerId);
+                console.log('QR session ID:', sessionId);
+                console.log('Local PeerJS ID:', myId);
+                console.log('PeerJS ready:', !!peer && !!peer.id);
 
                 qrStatus.textContent = t('qrConnecting');
                 qrScanError.textContent = '';
 
+                if (!peerId) {
+                    qrScanError.textContent = 'Invalid QR data. Missing peer ID.';
+                    console.error('Invalid QR — no peerId found.');
+                    return;
+                }
+
                 try {
-                    if (!peer) {
-                        await new Promise(resolve => setTimeout(resolve, 500));
+                    // Ensure peer is ready
+                    if (!peer || !peer.id) {
+                        console.log('Peer not ready, waiting...');
+                        let waited = 0;
+                        while ((!peer || !peer.id) && waited < 5000) {
+                            await new Promise(resolve => setTimeout(resolve, 200));
+                            waited += 200;
+                        }
+                    }
+                    if (!peer || !peer.id) {
+                        throw new Error('PeerJS is not ready. Refresh and try again.');
                     }
 
-                    if (!peer) {
-                        throw new Error('PeerJS is not ready. Please refresh and try again.');
-                    }
+                    console.log('Starting QR PeerJS connection...');
 
-                    // IMPORTANT: Do NOT create a second/custom connection here.
-                    // connectToPeer() is the same function used when the user
-                    // manually enters the 4-digit ID, and that path already
-                    // handles open/data/close/error correctly.
+                    // ★ Call the SAME connectToPeer used by manual ID
                     connectToPeer(peerId);
 
-                    const startedAt = Date.now();
-                    const waitForConnection = () => {
+                    // Wait for connection to open
+                    const start = Date.now();
+                    const timeout = 15000;
+
+                    (function waitForConnection() {
                         if (conn && conn.open) {
+                            console.log('✅ Connection opened after QR scan, peer:', conn.peer);
                             qrStatus.textContent = t('qrConnected');
-                            closeQRModal();
+                            qrStatus.style.color = 'var(--success)';
+
+                            // ★ FIX: Update Postbase session so the generator detects the connection
+                            if (sessionId) {
+                                const pbClient = initPostbase();
+                                if (pbClient) {
+                                    pbClient.from('device_sessions')
+                                        .update({ status: 'connected' })
+                                        .eq('id', sessionId)
+                                        .then(() => console.log('✅ Session marked as connected'))
+                                        .catch(e => console.warn('Session update failed:', e));
+                                }
+                            }
+
+                            setTimeout(() => { closeQRModal(); }, 700);
                             return;
                         }
-
-                        if (Date.now() - startedAt > 15000) {
-                            qrScanError.textContent = 'Connection timed out. Please scan again.';
+                        if (Date.now() - start > timeout) {
+                            qrScanError.textContent = 'Connection timed out. Try scanning again.';
+                            console.error('❌ QR connection timed out for peerId', peerId);
                             return;
                         }
+                        setTimeout(waitForConnection, 200);
+                    })();
 
-                        setTimeout(waitForConnection, 100);
-                    };
-
-                    waitForConnection();
                 } catch (err) {
-                    console.error('QR connection error:', err);
+                    console.error('❌ QR connection error:', err);
                     qrScanError.textContent = 'Connection failed: ' + (err.message || err);
                 }
             }
 
             function onScanError(err) {
-                // ignore, continuous scanning
+                // Continuous scanning errors — ignored
             }
 
-            // ---------- QR Modal Event Listeners ----------
+            // ===== QR Modal Events =====
             qrOpenBtn.addEventListener('click', openQRModal);
             qrModalClose.addEventListener('click', closeQRModal);
             qrRefreshBtn.addEventListener('click', showMyQR);
@@ -2839,32 +2404,18 @@
             qrBackToChoicesBtn.addEventListener('click', showQRChoices);
             qrBackFromScannerBtn.addEventListener('click', showQRChoices);
 
-            // Close modal on outside click
             qrModalOverlay.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeQRModal();
-                }
+                if (e.target === this) closeQRModal();
             });
 
-            // ---------- Init ----------
+            // ================================================================
+            // 13. Init
+            // ================================================================
             initPeer();
             updateUI();
 
-            // Re-apply language for QR texts when language changes
-            document.getElementById('langSelect').addEventListener('change', function() {
-                if (statusText.dataset.custom === 'false') {
-                    statusText.textContent = t('ready');
-                }
-                // Keep the QR action labels consistent after a language change.
-                const scanSpan = qrToggleScanBtn.querySelector('span');
-                if (scanSpan && !scannerActive) scanSpan.textContent = t('qrScan');
-                const refreshText = qrRefreshBtn.querySelector('i');
-                if (refreshText) qrRefreshBtn.innerHTML = `<i class="fas fa-redo"></i> ${t('qrRefresh')}`;
-            });
-
-            // Expose QR functions for debugging if needed
-            window.__webdropQR = { openQRModal, closeQRModal, refreshQR };
-
+            // Debug helpers
+            window.__webdropQR = { openQRModal, closeQRModal, refreshQR, connectToPeer };
         })();
     </script>
 </body>
