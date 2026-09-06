@@ -1178,7 +1178,7 @@
                         </button>
                         <!-- ===== NEW: QR Code button ===== -->
                         <button class="btn btn-primary" id="qrOpenBtn" style="background:var(--success);">
-                            <i class="fas fa-qrcode"></i> <span>QR Code</span>
+                            <i class="fas fa-qrcode"></i> <span>QR Code / Scan</span>
                         </button>
                     </div>
                     <div class="status-text" id="statusText" data-i18n="ready">Ready to connect</div>
@@ -1556,7 +1556,7 @@
                 if (st && !st.dataset.custom) st.textContent = t('ready');
                 // QR modal dynamic texts
                 const title = document.getElementById('qrModalTitle');
-                if (title) title.textContent = t('qrShowQR');
+                if (title) title.textContent = isMobileDevice() ? 'Scan QR Code' : t('qrShowQR');
                 const status = document.getElementById('qrStatus');
                 if (status && !status.dataset.manual) status.textContent = t('qrWaiting');
                 const refreshBtn = document.getElementById('qrRefreshBtn');
@@ -2393,18 +2393,37 @@
                 }
             }
 
+            // ---------- Detect mobile/tablet ----------
+            function isMobileDevice() {
+                return /Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry/i.test(navigator.userAgent)
+                    || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
+            }
+
             // ---------- Open QR modal ----------
             function openQRModal() {
                 qrModalOverlay.classList.add('open');
-                // Ensure scanner is stopped and hidden
+                qrScanError.textContent = '';
+                qrStatus.style.color = '';
+
+                // MOBILE: open the phone camera immediately so the user can scan
+                // the QR code shown on the other device. Do not show "Show my QR".
+                if (isMobileDevice()) {
+                    document.getElementById('qrDisplayArea').style.display = 'none';
+                    qrScannerContainer.style.display = 'block';
+                    qrToggleScanBtn.innerHTML = `<i class="fas fa-stop"></i> <span>Stop Camera</span>`;
+
+                    // Start immediately from the button click so the browser
+                    // treats this as a direct camera request.
+                    if (!scannerActive) toggleScanner();
+                    return;
+                }
+
+                // DESKTOP: show this device's QR code.
                 stopScanner();
-                // Show QR display, hide scanner
                 document.getElementById('qrDisplayArea').style.display = 'block';
-                // Generate QR if not already
                 if (!activeSessionId) {
                     generateQRSession();
                 } else {
-                    // Refresh to be safe
                     refreshQR();
                 }
             }
@@ -2432,34 +2451,33 @@
                         aspectRatio: 1.0
                     };
 
-                    const cameras = await Html5Qrcode.getCameras();
-                    if (!cameras || cameras.length === 0) {
-                        throw new Error('No camera was found on this device.');
-                    }
-
-                    // Prefer the rear camera on phones; otherwise use the first available camera.
-                    const rearCamera = cameras.find(camera =>
-                        /back|rear|environment/i.test(camera.label || '')
-                    );
-                    const cameraId = (rearCamera || cameras[0]).id;
-
+                    // Ask the browser directly for the rear/environment camera.
+                    // This is more reliable on phones than enumerating cameras first,
+                    // especially on iPhone/iPad where camera labels can be hidden until
+                    // permission has been granted.
                     await html5QrCode.start(
-                        cameraId,
+                        { facingMode: 'environment' },
                         config,
                         onScanSuccess,
                         onScanError
                     );
                     scannerActive = true;
-                    qrToggleScanBtn.querySelector('span').textContent = t('qrShowQR');
-                    qrToggleScanBtn.innerHTML = `<i class="fas fa-arrow-left"></i> <span>${t('qrShowQR')}</span>`;
+                    qrToggleScanBtn.innerHTML = `<i class="fas fa-stop"></i> <span>Stop Camera</span>`;
                 } catch (err) {
                     console.error('Scanner start error:', err);
                     const message = err && err.message ? err.message : 'Unable to open the camera.';
                     qrScanError.textContent = message + ' Make sure you are using HTTPS and allow camera permission.';
                     // fallback: show QR again
-                    document.getElementById('qrDisplayArea').style.display = 'block';
-                    qrScannerContainer.style.display = 'none';
-                    qrToggleScanBtn.innerHTML = `<i class="fas fa-camera"></i> <span>${t('qrScan')}</span>`;
+                    // Keep the modal in scanner mode on mobile so the user sees the
+                    // camera area and gets a useful camera/permission error.
+                    if (isMobileDevice()) {
+                        document.getElementById('qrDisplayArea').style.display = 'none';
+                        qrScannerContainer.style.display = 'block';
+                    } else {
+                        document.getElementById('qrDisplayArea').style.display = 'block';
+                        qrScannerContainer.style.display = 'none';
+                    }
+                    qrToggleScanBtn.innerHTML = `<i class="fas fa-camera"></i> <span>Open Camera</span>`;
                 }
             }
 
@@ -2474,11 +2492,18 @@
                 }
                 scannerActive = false;
                 qrScannerContainer.style.display = 'none';
-                document.getElementById('qrDisplayArea').style.display = 'block';
-                qrToggleScanBtn.innerHTML = `<i class="fas fa-camera"></i> <span>${t('qrScan')}</span>`;
-                // Re-show QR if we have a session
-                if (!activeSessionId) {
-                    generateQRSession();
+
+                if (isMobileDevice()) {
+                    // On a phone the QR button is a scanner, not a QR generator.
+                    document.getElementById('qrDisplayArea').style.display = 'none';
+                    qrToggleScanBtn.innerHTML = `<i class="fas fa-camera"></i> <span>Open Camera</span>`;
+                } else {
+                    document.getElementById('qrDisplayArea').style.display = 'block';
+                    qrToggleScanBtn.innerHTML = `<i class="fas fa-camera"></i> <span>${t('qrScan')}</span>`;
+                    // Re-show QR if we have a session
+                    if (!activeSessionId) {
+                        generateQRSession();
+                    }
                 }
             }
 
@@ -2593,7 +2618,7 @@
                 // Update toggle button text
                 const scanSpan = qrToggleScanBtn.querySelector('span');
                 if (scanSpan && !scannerActive) {
-                    scanSpan.textContent = t('qrScan');
+                    scanSpan.textContent = isMobileDevice() ? 'Open Camera' : t('qrScan');
                 }
                 const refreshSpan = qrRefreshBtn.querySelector('span');
                 if (refreshSpan) {
