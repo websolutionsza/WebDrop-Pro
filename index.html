@@ -2315,29 +2315,39 @@
                     qrStatus.textContent = t('qrWaiting');
                     qrStatus.dataset.manual = 'true';
 
-                    // Subscribe to real-time updates
+                    // PostbaseJS does not expose the old `.from(...).on(...)` API.
+                    // Poll the session instead so the QR flow works with the current SDK.
                     if (activeSubscription) {
-                        activeSubscription.unsubscribe();
+                        clearInterval(activeSubscription);
                         activeSubscription = null;
                     }
 
-                    activeSubscription = client.from('device_sessions')
-                        .on('*', (payload) => {
-                            if (payload.eventType === 'UPDATE' && payload.new && payload.new.id === sessionId) {
-                                if (payload.new.status === 'connected') {
-                                    // Mobile has confirmed!
-                                    qrStatus.textContent = t('qrConnected');
-                                    qrStatus.style.color = 'var(--success)';
-                                    // Close QR modal after a moment, connection will be established
-                                    setTimeout(() => {
-                                        closeQRModal();
-                                    }, 1500);
-                                    // The PeerJS connection will be established by the mobile side.
-                                    // But we also need to accept the connection – our peer.on('connection') handles it.
-                                }
+                    activeSubscription = setInterval(async () => {
+                        try {
+                            const { data, error } = await client
+                                .from('device_sessions')
+                                .select('*')
+                                .eq('id', sessionId)
+                                .limit(1);
+
+                            if (error) return;
+
+                            const row = Array.isArray(data) ? data[0] : data;
+                            if (row && row.status === 'connected') {
+                                qrStatus.textContent = t('qrConnected');
+                                qrStatus.style.color = 'var(--success)';
+
+                                clearInterval(activeSubscription);
+                                activeSubscription = null;
+
+                                setTimeout(() => {
+                                    closeQRModal();
+                                }, 1500);
                             }
-                        })
-                        .subscribe();
+                        } catch (pollError) {
+                            console.warn('Postbase session poll error:', pollError);
+                        }
+                    }, 1500);
 
                 } catch (err) {
                     console.error('QR session error:', err);
@@ -2351,7 +2361,7 @@
             // ---------- Refresh QR ----------
             function refreshQR() {
                 if (activeSubscription) {
-                    activeSubscription.unsubscribe();
+                    clearInterval(activeSubscription);
                     activeSubscription = null;
                 }
                 if (activeSessionId) {
@@ -2370,7 +2380,7 @@
                 stopScanner();
                 // Unsubscribe from real-time
                 if (activeSubscription) {
-                    activeSubscription.unsubscribe();
+                    clearInterval(activeSubscription);
                     activeSubscription = null;
                 }
                 // Clear any error
@@ -2407,13 +2417,8 @@
                     stopScanner();
                     return;
                 }
-                // Start scanner
+                // Start scanner. Camera access must not depend on Postbase.
                 qrScanError.textContent = '';
-                const client = initPostbase();
-                if (!client) {
-                    qrScanError.textContent = 'Postbase not configured';
-                    return;
-                }
 
                 // Hide QR display, show scanner
                 document.getElementById('qrDisplayArea').style.display = 'none';
@@ -2426,8 +2431,20 @@
                         qrbox: { width: 240, height: 240 },
                         aspectRatio: 1.0
                     };
+
+                    const cameras = await Html5Qrcode.getCameras();
+                    if (!cameras || cameras.length === 0) {
+                        throw new Error('No camera was found on this device.');
+                    }
+
+                    // Prefer the rear camera on phones; otherwise use the first available camera.
+                    const rearCamera = cameras.find(camera =>
+                        /back|rear|environment/i.test(camera.label || '')
+                    );
+                    const cameraId = (rearCamera || cameras[0]).id;
+
                     await html5QrCode.start(
-                        { facingMode: "environment" },
+                        cameraId,
                         config,
                         onScanSuccess,
                         onScanError
@@ -2437,7 +2454,8 @@
                     qrToggleScanBtn.innerHTML = `<i class="fas fa-arrow-left"></i> <span>${t('qrShowQR')}</span>`;
                 } catch (err) {
                     console.error('Scanner start error:', err);
-                    qrScanError.textContent = 'Camera access denied or not supported.';
+                    const message = err && err.message ? err.message : 'Unable to open the camera.';
+                    qrScanError.textContent = message + ' Make sure you are using HTTPS and allow camera permission.';
                     // fallback: show QR again
                     document.getElementById('qrDisplayArea').style.display = 'block';
                     qrScannerContainer.style.display = 'none';
