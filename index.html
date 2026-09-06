@@ -1311,8 +1311,8 @@
             // ================================================================
             // 1. YOUR POSTBASE CREDENTIALS – REPLACE THESE!
             // ================================================================
-            const POSTBASE_URL = "https://postbase-production-b4c8.up.railway.app";   // e.g. https://your-project.postbase.app
-            const POSTBASE_ANON_KEY = "pb_anon_IvpWA7o62oJLMAfUSCwYQfCP_4P2scsDYlBcaGqn4GzlDztkcaq8IAds_jdCxz6l"; // public/anon key
+            const POSTBASE_URL = "https://postbase-production-b4c8.up.railway.app";
+            const POSTBASE_ANON_KEY = "pb_anon_IvpWA7o62oJLMAfUSCwYQfCP_4P2scsDYlBcaGqn4GzlDztkcaq8IAds_jdCxz6l";
 
             // ================================================================
             // 2. EXISTING CODE (all your original logic – untouched except added QR parts)
@@ -2222,20 +2222,34 @@
             let isScanning = false;
             let isQrGenerating = false;
 
+            // ===== REPLACED with your robust initPostbase =====
             function initPostbase() {
                 if (!POSTBASE_URL || POSTBASE_URL === "YOUR_POSTBASE_PROJECT_URL") {
-                    console.warn("Postbase URL not configured. QR will not work.");
+                    console.error("Postbase URL not configured.");
                     return null;
                 }
                 if (!POSTBASE_ANON_KEY || POSTBASE_ANON_KEY === "YOUR_POSTBASE_ANON_KEY") {
-                    console.warn("Postbase anon key not configured. QR will not work.");
+                    console.error("Postbase anon key not configured.");
                     return null;
                 }
+
                 try {
-                    // Assuming postbase-js exposes a global `postbase` constructor
-                    // If not, adjust based on the actual SDK.
-                    const client = postbase.createClient(POSTBASE_URL, POSTBASE_ANON_KEY);
-                    return client;
+                    // Try different ways the SDK might be exposed
+                    const pb = window.postbase || window.Postbase;
+                    if (!pb) {
+                        console.error("Postbase SDK not loaded. Check the CDN script tag.");
+                        return null;
+                    }
+
+                    // Common patterns: pb.createClient(...) or new pb(...)
+                    if (typeof pb.createClient === 'function') {
+                        return pb.createClient(POSTBASE_URL, POSTBASE_ANON_KEY);
+                    } else if (typeof pb === 'function') {
+                        return new pb(POSTBASE_URL, POSTBASE_ANON_KEY);
+                    } else {
+                        console.error("Unknown Postbase SDK structure. Available:", pb);
+                        return null;
+                    }
                 } catch (e) {
                     console.error("Failed to init Postbase client:", e);
                     return null;
