@@ -6,6 +6,9 @@
     <title>WebDrop Pro – Secure P2P File Exchange</title>
     <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22WebDrop%20Pro%22%2C%22short_name%22%3A%22WebDrop%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fraw.githubusercontent.com%2Fwebsolutionsza%2FWebDrop-Pro%2Frefs%2Fheads%2Fmain%2Fweb%20drop%20192.png%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%2C%22display%22%3A%22standalone%22%7D" />
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/websolutionsza/WebDrop-Pro/refs/heads/main/web%20drop%20192.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="https://raw.githubusercontent.com/websolutionsza/WebDrop-Pro/refs/heads/main/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="https://raw.githubusercontent.com/websolutionsza/WebDrop-Pro/refs/heads/main/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="https://raw.githubusercontent.com/websolutionsza/WebDrop-Pro/refs/heads/main/favicon-48x48.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <meta name="google-site-verification" content="EW_zyixVqq0-JThC-I5D7ryIZjw6xE-TZjUz84TTj3U" />
     <base target="_blank">
@@ -977,6 +980,126 @@
             margin-top: 8px;
         }
 
+        /* ===== TERMS & PRIVACY MODAL STYLES ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+            padding: 20px;
+            animation: modalFadeIn 0.2s ease;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-card {
+            background: var(--bg-container);
+            border-radius: var(--radius);
+            max-width: 640px;
+            width: 100%;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            position: relative;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: modalSlideUp 0.25s ease;
+            transition: background var(--transition), border var(--transition);
+        }
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-header {
+            background: var(--bg-header);
+            color: var(--text-light);
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .modal-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-light);
+        }
+        .modal-header .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.8rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0 4px;
+            border-radius: 8px;
+            transition: all var(--transition);
+            opacity: 0.8;
+        }
+        .modal-header .close-btn:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .modal-body {
+            padding: 24px 28px;
+            overflow-y: auto;
+            color: var(--text-primary);
+            line-height: 1.65;
+            font-size: 0.95rem;
+        }
+        .modal-body p { margin-bottom: 14px; }
+        .modal-body h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin: 22px 0 10px;
+            color: var(--text-primary);
+        }
+        .modal-body ul {
+            margin: 8px 0 14px 22px;
+            padding-left: 8px;
+        }
+        .modal-body ul li {
+            margin-bottom: 6px;
+            list-style: disc;
+        }
+        .modal-body .effective-date {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-bottom: 18px;
+        }
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-card);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            transition: background var(--transition), border var(--transition);
+        }
+        .modal-footer .primary-btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 28px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .modal-footer .primary-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
         @media (max-width: 640px) {
             .header {
                 flex-direction: column;
@@ -1008,6 +1131,8 @@
             .radar-center { width: 18px; height: 18px; }
             .content { padding: 16px; }
             .header-logo { height: 48px; }
+            .modal-body { padding: 18px 18px; }
+            .modal-header { padding: 14px 18px; }
         }
 
         @media (max-width: 420px) {
@@ -1154,9 +1279,9 @@
         <div class="footer">
             <span>&copy; <span id="footerYear">2025</span> WebDrop Pro. All rights reserved.</span>
             <span>
-                <a href="#" id="termsLink">Terms &amp; Conditions</a>
+                <a href="#" onclick="event.preventDefault(); openModal('terms-modal');">Terms &amp; Conditions</a>
                 &nbsp;·&nbsp;
-                <a href="#" id="privacyLink">Privacy</a>
+                <a href="#" onclick="event.preventDefault(); openModal('privacy-modal');">Privacy Policy</a>
             </span>
             <span>Developed by <a href="https://websolutionsza.github.io/websolutionsSA/" target="_blank" rel="noopener">WebSolutionsSA</a></span>
         </div>
@@ -1165,8 +1290,8 @@
             <p>
                 <i class="fas fa-cookie-bite"></i>
                 We use cookies to improve your experience. By using our site you accept our
-                <a href="#" id="cookieTermsLink">Terms &amp; Conditions</a> and
-                <a href="#" id="cookiePrivacyLink">Privacy Policy</a>.
+                <a href="#" onclick="event.preventDefault(); openModal('terms-modal');">Terms &amp; Conditions</a> and
+                <a href="#" onclick="event.preventDefault(); openModal('privacy-modal');">Privacy Policy</a>.
             </p>
             <button class="btn" id="acceptCookiesBtn">Accept</button>
         </div>
@@ -1228,10 +1353,118 @@
         </div>
     </div>
 
+    <!-- Terms & Conditions Modal -->
+    <div id="terms-modal" class="modal-overlay" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>Terms & Conditions</h2>
+          <button class="close-btn" onclick="closeModal('terms-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="effective-date">Effective Date: September 29, 2026</p>
+
+          <p>Welcome to <strong>WebDrop Pro</strong> ("we", "our", or "us"). By accessing or using WebDrop Pro, you agree to be bound by these Terms and Conditions.</p>
+
+          <h3>1. Description of Service</h3>
+          <p>WebDrop Pro provides a peer-to-peer (P2P) file transfer utility operating directly within web browsers using WebRTC technology. Files transferred via WebDrop Pro are sent directly between connecting devices without being uploaded to or stored on our servers.</p>
+
+          <h3>2. Acceptable Use</h3>
+          <p>You agree to use WebDrop Pro only for lawful purposes. You agree not to use the service to transmit:</p>
+          <ul>
+            <li>Any illegal content, malware, viruses, or destructive code.</li>
+            <li>Copyrighted content or intellectual property without proper authorization.</li>
+            <li>Harmful, threatening, harassing, or abusive material.</li>
+          </ul>
+
+          <h3>3. Service Availability & Disclaimers</h3>
+          <p>WebDrop Pro is provided on an "AS IS" and "AS AVAILABLE" basis. Because transfers rely on direct browser-to-browser WebRTC connections, connection speed, success rates, and availability depend on network configurations, NAT/firewall restrictions, and peer connectivity.</p>
+
+          <h3>4. Limitation of Liability</h3>
+          <p>In no event shall WebDrop Pro or WebSolutions SA be liable for any direct, indirect, incidental, or consequential damages resulting from lost files, transfer failures, data corruption, or unauthorized access to transfers.</p>
+
+          <h3>5. Changes to Terms</h3>
+          <p>We reserve the right to modify these Terms at any time. Continued use of WebDrop Pro after changes indicates acceptance of the updated Terms.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="primary-btn" onclick="closeModal('terms-modal')">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Privacy Policy Modal -->
+    <div id="privacy-modal" class="modal-overlay" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>Privacy Policy</h2>
+          <button class="close-btn" onclick="closeModal('privacy-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="effective-date">Effective Date: September 29, 2026</p>
+
+          <p>Your privacy is fundamental to WebDrop Pro. This policy outlines how data is handled when you use our service.</p>
+
+          <h3>1. Direct Peer-to-Peer Transfers</h3>
+          <p>WebDrop Pro is designed around privacy. File contents transferred through the platform travel directly between your device and the connected peer using end-to-end encrypted WebRTC streams. <strong>We do not upload, scan, or store your transferred files on any server.</strong></p>
+
+          <h3>2. Signaling & Device IDs</h3>
+          <p>To establish a connection between devices, temporary signaling data (such as randomized Device IDs and WebRTC connection metadata) is processed in real time to locate peers on the same local network or connect via paired ID. This metadata is transient and discarded once connection signaling completes.</p>
+
+          <h3>3. Local Storage & Cookies</h3>
+          <p>We use lightweight local browser storage strictly for necessary site functions, such as remembering your user interface preferences (e.g., theme choice or cookie consent acceptance). We do not use persistent tracking cookies or cross-site profiling.</p>
+
+          <h3>4. Third-Party Hosting</h3>
+          <p>The static web assets for WebDrop Pro are hosted via Cloudflare Pages. Standard anonymous web traffic metadata (such as browser type and IP address) may be processed by hosting infrastructure providers strictly for service security, DDOS protection, and performance.</p>
+
+          <h3>5. Contact Us</h3>
+          <p>If you have any questions regarding this Privacy Policy, you can reach out through the WebSolutions SA portal.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="primary-btn" onclick="closeModal('privacy-modal')">Close</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== CDN Scripts ===== -->
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <!-- ===== Modal Controls (global, accessible via inline onclick) ===== -->
+    <script>
+        function openModal(id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal(id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        // Close on overlay click (outside the card) and on Escape key
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.modal-overlay').forEach(function (overlay) {
+                overlay.addEventListener('click', function (e) {
+                    if (e.target === overlay) {
+                        overlay.style.display = 'none';
+                        document.body.style.overflow = '';
+                    }
+                });
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' || e.keyCode === 27) {
+                    document.querySelectorAll('.modal-overlay').forEach(function (overlay) {
+                        if (overlay.style.display !== 'none') {
+                            overlay.style.display = 'none';
+                            document.body.style.overflow = '';
+                        }
+                    });
+                }
+            });
+        });
+    </script>
 
     <script type="module">
         import { createClient } from "https://cdn.jsdelivr.net/npm/postbasejs@0.5.17/+esm";
@@ -1351,13 +1584,6 @@
             acceptCookiesBtn.addEventListener('click', function() {
                 localStorage.setItem('cookiesAccepted', 'true');
                 cookieConsent.classList.add('hidden');
-            });
-
-            document.querySelectorAll('#termsLink, #cookieTermsLink, #privacyLink, #cookiePrivacyLink').forEach(el => {
-                el.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    alert('Terms and Conditions & Privacy Policy pages would be displayed here.');
-                });
             });
 
             // ================================================================
