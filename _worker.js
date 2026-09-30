@@ -1,8 +1,5 @@
 const TABLE = 'device_sessions';
 
-// The project ID from your Postbase instance
-const PROJECT_ID = '7933361d-a2da-4747-b5f0-7fdc8c85253d';
-
 function json(data, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
     status,
@@ -28,22 +25,35 @@ function headersFor(env, extra) {
   return Object.assign(h, extra || {});
 }
 
-// New function to call the Postbase /api/db/query endpoint
-async function queryPostbase(env, sql, params) {
+// Helper to call the Postbase /api/db/query endpoint with the correct format
+async function queryPostbase(env, operation, table, filters, data) {
     const base = String(env.POSTBASE_URL || '').replace(/\/+$/, '');
     const url = `${base}/api/db/query`;
+
+    const body = {
+        operation: operation,
+        table: table
+    };
+
+    if (filters && filters.length > 0) {
+        body.filters = filters;
+    }
+
+    if (data) {
+        body.data = data;
+    }
 
     const res = await fetch(url, {
         method: 'POST',
         headers: headersFor(env),
-        body: JSON.stringify({ query: sql, params: params })
+        body: JSON.stringify(body)
     });
     
     const text = await res.text();
-    let data;
-    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+    let result;
+    try { result = JSON.parse(text); } catch { result = { raw: text }; }
     
-    return { ok: res.ok, status: res.status, data: data };
+    return { ok: res.ok, status: res.status, data: result };
 }
 
 async function handleSession(request, env) {
@@ -59,12 +69,11 @@ async function handleSession(request, env) {
   }
 
   if (method === 'GET') {
-    // New debug mode to test the correct endpoint
-    if (url.searchParams.get('debug') === '2') {
-        const testSql = 'SELECT 1 as test';
-        const result = await queryPostbase(env, testSql, []);
+    // Debug mode to test the connection
+    if (url.searchParams.get('debug') === '3') {
+        const result = await queryPostbase(env, 'select', TABLE, [], null);
         return json({
-            note: 'Testing the /api/db/query endpoint',
+            note: 'Testing /api/db/query with a select operation',
             url: `${String(env.POSTBASE_URL || '').replace(/\/+$/, '')}/api/db/query`,
             status: result.status,
             ok: result.ok,
@@ -75,14 +84,14 @@ async function handleSession(request, env) {
     const id = url.searchParams.get('id');
     if (!id) return json({ error: 'Missing id parameter' }, 400);
 
-    const sql = `SELECT * FROM ${TABLE} WHERE id = $1 LIMIT 1`;
-    const result = await queryPostbase(env, sql, [id]);
+    const result = await queryPostbase(env, 'select', TABLE, [
+        { column: 'id', operator: 'eq', value: id }
+    ], null);
 
     if (!result.ok) {
       return json({ error: 'Database query failed', detail: result.data }, 502);
     }
     
-    // Postbase returns results in a `data` array
     const row = result.data && result.data.data ? result.data.data[0] : null;
     return json({ ok: true, session: row || null });
   }
@@ -98,9 +107,12 @@ async function handleSession(request, env) {
     if (!id) return json({ error: 'Missing id' }, 400);
 
     if (op === 'create') {
-      const sql = `INSERT INTO ${TABLE} (id, status, user_id, created_at) VALUES ($1, $2, $3, $4) RETURNING *`;
-      const params = [id, 'pending', null, new Date().toISOString()];
-      const result = await queryPostbase(env, sql, params);
+      const result = await queryPostbase(env, 'insert', TABLE, null, {
+        id: id,
+        status: 'pending',
+        user_id: null,
+        created_at: new Date().toISOString()
+      });
 
       if (!result.ok) {
         return json({ error: 'Create failed', detail: result.data }, 502);
@@ -109,9 +121,11 @@ async function handleSession(request, env) {
     }
 
     if (op === 'connect') {
-      const sql = `UPDATE ${TABLE} SET status = $1 WHERE id = $2`;
-      const params = ['connected', id];
-      const result = await queryPostbase(env, sql, params);
+      const result = await queryPostbase(env, 'update', TABLE, [
+        { column: 'id', operator: 'eq', value: id }
+      ], {
+        status: 'connected'
+      });
 
       if (!result.ok) {
         return json({ error: 'Update failed', detail: result.data }, 502);
