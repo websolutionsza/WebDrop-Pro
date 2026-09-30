@@ -1467,17 +1467,45 @@
     </script>
 
     <script type="module">
-        import { createClient } from "https://cdn.jsdelivr.net/npm/postbasejs@0.5.17/+esm";
-
         (function() {
             'use strict';
 
             // ================================================================
-            // 1. POSTBASE CREDENTIALS (confirmed correct)
+            // 1. Serverless session API (secrets live in Cloudflare env vars)
             // ================================================================
-            const POSTBASE_URL = "https://postbase-production-b4c8.up.railway.app";
-            const POSTBASE_ANON_KEY = "pb_anon_IvpWA7o62oJLMAfUSCwYQfCP_4P2scsDYlBcaGqn4GzlDztkcaq8IAds_jdCxz6l";
-            const POSTBASE_PROJECT_ID = "7933361d-a2da-4747-b5f0-7fdc8c85253d";
+            const SESSION_ENDPOINT = '/api/session';
+
+            async function apiCreateSession(sessionId) {
+                const res = await fetch(SESSION_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ op: 'create', id: sessionId })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Create failed');
+                return data;
+            }
+
+            async function apiGetSession(sessionId) {
+                const res = await fetch(
+                    SESSION_ENDPOINT + '?id=' + encodeURIComponent(sessionId),
+                    { method: 'GET', headers: { 'Accept': 'application/json' } }
+                );
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Query failed');
+                return data;
+            }
+
+            async function apiMarkConnected(sessionId) {
+                const res = await fetch(SESSION_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ op: 'connect', id: sessionId })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Update failed');
+                return data;
+            }
 
             // ================================================================
             // 2. i18n
@@ -2278,28 +2306,12 @@
             const qrBackFromScannerBtn = document.getElementById('qrBackFromScannerBtn');
             const qrModalTitle = document.getElementById('qrModalTitle');
 
-            let postbaseClient = null;
             let activeSessionId = null;
             let activeSubscription = null;
             let qrCodeInstance = null;
             let html5QrCode = null;
             let scannerActive = false;
             let isQrGenerating = false;
-
-            // ===== Postbase init =====
-            function initPostbase() {
-                if (!POSTBASE_URL) { console.error("Postbase URL missing."); return null; }
-                if (!POSTBASE_ANON_KEY) { console.error("Postbase anon key missing."); return null; }
-                if (!POSTBASE_PROJECT_ID) { console.error("Postbase project ID missing."); return null; }
-                try {
-                    return createClient(POSTBASE_URL, POSTBASE_ANON_KEY, {
-                        projectId: POSTBASE_PROJECT_ID
-                    });
-                } catch (e) {
-                    console.error("Failed to init Postbase:", e);
-                    return null;
-                }
-            }
 
             function generateUUID() {
                 if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -2312,32 +2324,18 @@
                 });
             }
 
-            // ===== Generate QR session =====
+            // ===== Generate QR session via secure backend =====
             async function generateQRSession() {
                 if (isQrGenerating) return;
                 isQrGenerating = true;
                 qrStatus.textContent = t('qrConnecting') + '...';
                 qrScanError.textContent = '';
 
-                const client = initPostbase();
-                if (!client) {
-                    qrStatus.textContent = t('qrError', { msg: 'Postbase not configured' });
-                    isQrGenerating = false;
-                    return;
-                }
-
                 const sessionId = generateUUID();
                 const desktopPeerId = myId;
 
                 try {
-                    const { error } = await client.from('device_sessions').insert({
-                        id: sessionId,
-                        status: 'pending',
-                        user_id: null,
-                        created_at: new Date().toISOString()
-                    });
-                    if (error) throw error;
-
+                    await apiCreateSession(sessionId);
                     activeSessionId = sessionId;
 
                     const qrData = JSON.stringify({ sessionId, peerId: desktopPeerId });
@@ -2361,16 +2359,11 @@
                         activeSubscription = null;
                     }
 
-                    // Poll for connection status
+                    // Poll for connection status via backend
                     activeSubscription = setInterval(async () => {
                         try {
-                            const { data, error } = await client
-                                .from('device_sessions')
-                                .select('*')
-                                .eq('id', sessionId)
-                                .limit(1);
-                            if (error) return;
-                            const row = Array.isArray(data) ? data[0] : data;
+                            const data = await apiGetSession(sessionId);
+                            const row = data && data.session;
                             if (row && row.status === 'connected') {
                                 qrStatus.textContent = t('qrConnected');
                                 qrStatus.style.color = 'var(--success)';
@@ -2379,7 +2372,7 @@
                                 setTimeout(() => { closeQRModal(); }, 1500);
                             }
                         } catch (pollError) {
-                            console.warn('Postbase poll error:', pollError);
+                            console.warn('Session poll error:', pollError);
                         }
                     }, 1500);
 
@@ -2525,7 +2518,7 @@
                 scannerActive = false;
             }
 
-            // ===== ★ KEY FIX: QR scan success → connectToPeer + update Postbase session =====
+            // ===== QR scan success → connectToPeer + mark session connected via backend =====
             async function onScanSuccess(decodedText) {
                 console.log('QR decoded:', decodedText);
 
@@ -2587,16 +2580,11 @@
                             qrStatus.textContent = t('qrConnected');
                             qrStatus.style.color = 'var(--success)';
 
-                            // ★ FIX: Update Postbase session so the generator detects the connection
+                            // ★ Mark session connected via secure backend
                             if (sessionId) {
-                                const pbClient = initPostbase();
-                                if (pbClient) {
-                                    pbClient.from('device_sessions')
-                                        .update({ status: 'connected' })
-                                        .eq('id', sessionId)
-                                        .then(() => console.log('✅ Session marked as connected'))
-                                        .catch(e => console.warn('Session update failed:', e));
-                                }
+                                apiMarkConnected(sessionId)
+                                    .then(() => console.log('✅ Session marked as connected'))
+                                    .catch(e => console.warn('Session update failed:', e));
                             }
 
                             setTimeout(() => { closeQRModal(); }, 700);
