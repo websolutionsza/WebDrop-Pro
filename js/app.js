@@ -261,26 +261,48 @@
 
   /* ========================================================================
      3. Theme (uses inline SVG icons, no Font Awesome)
+     The data-theme attribute is set on the <html> element so the [data-theme="dark"]
+     CSS selector cascades to body and all descendants. Setting it on a nested
+     #app element would leave body using the wrong theme variables.
      ======================================================================== */
   const themeToggle = document.getElementById('themeToggle');
-  const app = document.getElementById('app');
   let dark = false;
+  const THEME_STORAGE_KEY = 'webdrop-theme';
+
+  function applyThemeToDOM(darkMode) {
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+  }
 
   function setTheme(darkMode) {
     dark = darkMode;
-    app.setAttribute('data-theme', dark ? 'dark' : 'light');
+    applyThemeToDOM(dark);
     if (themeToggle) themeToggle.innerHTML = dark ? ICONS.sun : ICONS.moon;
-    try { localStorage.setItem('webdrop-theme', dark ? 'dark' : 'light'); } catch (_) {}
+    themeToggle.setAttribute('aria-pressed', String(dark));
+    themeToggle.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+    try { localStorage.setItem(THEME_STORAGE_KEY, dark ? 'dark' : 'light'); } catch (_) {}
   }
 
+  // Apply theme as early as possible to avoid flash of wrong theme
   (function initTheme() {
     let saved = null;
-    try { saved = localStorage.getItem('webdrop-theme'); } catch (_) {}
+    try { saved = localStorage.getItem(THEME_STORAGE_KEY); } catch (_) {}
     if (saved === 'dark') setTheme(true);
     else if (saved === 'light') setTheme(false);
     else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme(true);
     else setTheme(true); // default to dark utilitarian aesthetic
   })();
+
+  // Listen to system theme changes only when the user has not set a preference
+  if (window.matchMedia) {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = (e) => {
+      let saved = null;
+      try { saved = localStorage.getItem(THEME_STORAGE_KEY); } catch (_) {}
+      if (saved !== 'dark' && saved !== 'light') setTheme(e.matches);
+    };
+    if (mq.addEventListener) mq.addEventListener('change', onChange);
+    else if (mq.addListener) mq.addListener(onChange);
+  }
 
   themeToggle.addEventListener('click', () => setTheme(!dark));
 
@@ -367,6 +389,7 @@
   let conn = null;
   let myId = '';
   let isRefreshing = false;
+  let peerRetryCount = 0;  // caps unavailable-id retry loop
 
   /* ========================================================================
      7. Helpers
@@ -507,22 +530,19 @@
     });
   }
 
+  /* Paste handling: do NOT auto-convert large pastes to .txt anymore.
+     The user now chooses between Send (text) and Send as TXT using the two
+     buttons in the chat-input row. We still surface a hint when a paste is
+     large so the user knows the TXT option exists. */
   msgInput.addEventListener('paste', function (e) {
     const clipboardData = e.clipboardData || window.clipboardData;
     if (!clipboardData) return;
     const pastedText = clipboardData.getData('text');
     if (!pastedText) return;
-    const charCount = pastedText.length;
-    const lineCount = pastedText.split(/\r\n|\r|\n/).length;
-    if (charCount > PASTE_CHAR_THRESHOLD || lineCount > 1) {
-      e.preventDefault();
-      const timestamp = Date.now();
-      const filename = 'shared-text-' + timestamp + '.txt';
-      const blob = new Blob([pastedText], { type: 'text/plain;charset=utf-8' });
-      const file = new File([blob], filename, { type: 'text/plain;charset=utf-8' });
-      pendingAttachments.push(file);
-      renderPendingAttachments();
-      systemMessage('pastedTextAttached', { name: filename });
+    if (pastedText.length > PASTE_CHAR_THRESHOLD) {
+      // Do not preventDefault; let the paste land in the input so the user
+      // can review it. Show a hint pointing at the TXT button.
+      systemMessage('pastedTextAttached', { name: 'shared-text.txt' });
     }
   });
 
@@ -624,7 +644,12 @@
 
     peer.on('open', (id) => {
       console.log('Peer open with ID:', id);
+      // BUG FIX (audit): reset retry counter on successful open, and clear
+      // any leftover error colour from a previous failed attempt.
+      peerRetryCount = 0;
       statusText.textContent = t('ready');
+      statusText.style.color = '';
+      statusText.dataset.custom = 'false';
     });
 
     peer.on('connection', (incoming) => {
@@ -643,6 +668,9 @@
       });
       conn.on('data', (data) => handleIncomingData(data));
       conn.on('close', () => {
+        // BUG FIX (audit): clear any in-progress incoming transfers so the
+        // Map does not leak transfer state across reconnects.
+        incomingTransfers.clear();
         systemMessage('systemClosed');
         resetUI();
       });
@@ -656,6 +684,16 @@
     peer.on('error', (err) => {
       console.error('peer error:', err);
       if (err.type === 'unavailable-id') {
+        // BUG FIX (audit): previously this branch recursed indefinitely if
+        // PeerJS kept returning unavailable-id. Cap retries.
+        peerRetryCount = (peerRetryCount || 0) + 1;
+        if (peerRetryCount > 5) {
+          console.error('PeerJS unavailable-id retried 5 times; giving up.');
+          statusText.textContent = t('failed');
+          statusText.style.color = 'var(--danger)';
+          peerRetryCount = 0;
+          return;
+        }
         myId = Math.floor(1000 + Math.random() * 9000).toString();
         myIdDisplay.textContent = myId;
         try { peer.destroy(); } catch (_) {}
@@ -729,12 +767,17 @@
         systemMessage('systemConnected');
         statusText.textContent = t('connected');
         statusText.dataset.custom = 'false';
+        // BUG FIX (audit): clear any leftover danger colour from a prior
+        // failed attempt so the success state shows correctly.
+        statusText.style.color = '';
       });
 
       newConn.on('data', (data) => handleIncomingData(data));
 
       newConn.on('close', () => {
         console.log('Connection closed with', targetId);
+        // BUG FIX (audit): clear in-progress incoming transfers on disconnect.
+        incomingTransfers.clear();
         systemMessage('systemClosed');
         resetUI();
       });
@@ -884,6 +927,15 @@
     }
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
+
+    // BUG FIX (audit): Blob URL memory leak. Previously every received file
+    // created an object URL that was never revoked, leaking memory for the
+    // lifetime of the page. Revoke after 5 minutes; download/save already
+    // snapshots the blob, and the in-DOM preview stays valid for the visible
+    // lifetime of the message.
+    setTimeout(function () {
+      try { URL.revokeObjectURL(url); } catch (_) {}
+    }, 5 * 60 * 1000);
   }
 
   async function sendFile(file, metadata) {
@@ -935,10 +987,12 @@
   function handleFiles(files, label) {
     if (!conn || !files || !files.length) return;
     const list = Array.from(files);
-    for (const file of list) {
-      systemMessage('systemSending', { name: file.name });
-      sendFile(file, { label: label || 'file' });
+    if (list.length > 1) {
+      showZipChoice(list);
+      return;
     }
+    systemMessage('systemSending', { name: list[0].name });
+    sendFile(list[0], { label: label || 'file' });
   }
 
   fileInput.addEventListener('change', function (e) {
@@ -953,23 +1007,17 @@
     handleFiles(e.target.files, 'video');
     this.value = '';
   });
-  folderInput.addEventListener('change', async function (e) {
+  folderInput.addEventListener('change', function (e) {
     const files = Array.from(e.target.files || []);
     if (!files.length || !conn) return;
-    const folderName = (files[0].webkitRelativePath || files[0].name).split('/')[0];
-    systemMessage('systemFolder', { name: folderName, count: files.length });
-    try {
-      await waitForConnectionOpen(conn);
-      for (const file of files) {
-        await sendFile(file, { folder: true, relativePath: file.webkitRelativePath || file.name });
-      }
-      systemMessage('systemFolderSent', { name: folderName });
-    } catch (err) {
-      console.error('Folder transfer error:', err);
-      systemMessage('systemError', { name: folderName });
-    } finally {
-      this.value = '';
+    if (files.length > 1) {
+      showZipChoice(files);
+    } else {
+      const file = files[0];
+      systemMessage('systemSending', { name: file.name });
+      sendFile(file, { folder: true, relativePath: file.webkitRelativePath || file.name });
     }
+    this.value = '';
   });
 
   // Drop zone alternate triggers
@@ -986,23 +1034,17 @@
     });
   }
   if (dropFolderInput) {
-    dropFolderInput.addEventListener('change', async function (e) {
+    dropFolderInput.addEventListener('change', function (e) {
       const files = Array.from(e.target.files || []);
       if (!files.length || !conn) return;
-      const folderName = (files[0].webkitRelativePath || files[0].name).split('/')[0];
-      systemMessage('systemFolder', { name: folderName, count: files.length });
-      try {
-        await waitForConnectionOpen(conn);
-        for (const file of files) {
-          await sendFile(file, { folder: true, relativePath: file.webkitRelativePath || file.name });
-        }
-        systemMessage('systemFolderSent', { name: folderName });
-      } catch (err) {
-        console.error('Folder transfer error:', err);
-        systemMessage('systemError', { name: folderName });
-      } finally {
-        this.value = '';
+      if (files.length > 1) {
+        showZipChoice(files);
+      } else {
+        const file = files[0];
+        systemMessage('systemSending', { name: file.name });
+        sendFile(file, { folder: true, relativePath: file.webkitRelativePath || file.name });
       }
+      this.value = '';
     });
   }
 
@@ -1155,35 +1197,26 @@
       systemMessage('systemError', { name: files.length + ' file(s)' });
       return;
     }
-    const hasFolder = files.some(f => f.webkitRelativePath && f.webkitRelativePath.indexOf('/') > -1);
+    if (files.length > 1) {
+      showZipChoice(files);
+      return;
+    }
+    const file = files[0];
+    const hasFolder = file.webkitRelativePath && file.webkitRelativePath.indexOf('/') > -1;
     if (hasFolder) {
-      const folderName = (files.find(f => f.webkitRelativePath) || files[0]).webkitRelativePath.split('/')[0];
-      systemMessage('systemFolder', { name: folderName, count: files.length });
-      try {
-        await waitForConnectionOpen(conn);
-        for (const file of files) {
-          await sendFile(file, { folder: true, relativePath: file.webkitRelativePath || file.name });
-        }
-        systemMessage('systemFolderSent', { name: folderName });
-      } catch (err) {
-        console.error('Drop folder transfer error:', err);
-        systemMessage('systemError', { name: folderName });
-      }
+      const folderName = file.webkitRelativePath.split('/')[0];
+      systemMessage('systemSending', { name: file.name });
+      sendFile(file, { folder: true, relativePath: file.webkitRelativePath || file.name });
     } else {
-      for (const file of files) {
-        systemMessage('systemSending', { name: file.name });
-        await sendFile(file, { label: 'drag-drop' });
-      }
+      systemMessage('systemSending', { name: file.name });
+      await sendFile(file, { label: 'drag-drop' });
     }
   }
 
-  // Also forward drops directly onto the drop zone to the same handler
-  if (dropZone) {
-    dropZone.addEventListener('drop', function (e) {
-      // Handled by window-level listener above; just prevent bubbling side effects
-      e.stopPropagation();
-    });
-  }
+  // Note: no dropZone-level drop listener. The window-level drop handler
+  // above already calls preventDefault for any file drag, which prevents
+  // the browser from opening the file. Adding a stopPropagation-only
+  // listener here would BREAK that default prevention. See task 2.
 
   /* ========================================================================
      14. Send message
@@ -1195,12 +1228,21 @@
       systemMessage('systemSending', { name: file.name });
       sendFile(file, { label: 'pasted-text', source: 'paste-intercept' });
     }
-    if (text) {
-      conn.send({ type: 'text', payload: text });
-      addMessage('Me', text, 'sent');
-    }
     pendingAttachments = [];
     renderPendingAttachments();
+    if (text) {
+      // Auto-route very large text through the chunked file-transfer path
+      // so it does not blow the WebRTC data-channel message size limit.
+      if (text.length > TEXT_MESSAGE_LIMIT) {
+        const filename = 'shared-text-' + Date.now() + '.txt';
+        const file = buildTxtFile(text, filename);
+        systemMessage('systemSending', { name: filename });
+        sendFile(file, { label: 'large-text', source: 'auto-text-to-file' });
+      } else {
+        conn.send({ type: 'text', payload: text });
+        addMessage('Me', text, 'sent');
+      }
+    }
     msgInput.value = '';
   }
 
@@ -1271,6 +1313,19 @@
   const qrBackToChoicesBtn   = document.getElementById('qrBackToChoicesBtn');
   const qrBackFromScannerBtn = document.getElementById('qrBackFromScannerBtn');
   const qrModalTitle         = document.getElementById('qrModalTitle');
+
+  /* ZIP choice modal (multi-file send) */
+  const zipChoiceOverlay     = document.getElementById('zipChoiceOverlay');
+  const zipChoiceClose       = document.getElementById('zipChoiceClose');
+  const zipChooseIndivBtn    = document.getElementById('zipChooseIndivBtn');
+  const zipChooseArchiveBtn  = document.getElementById('zipChooseArchiveBtn');
+  const zipCancelBtn         = document.getElementById('zipCancelBtn');
+  const zipModalTitle        = document.getElementById('zipModalTitle');
+  const zipChoiceSubtitle    = document.getElementById('zipChoiceSubtitle');
+  const zipStatus            = document.getElementById('zipStatus');
+
+  /* TXT send button (in chat input) */
+  const sendTxtBtn           = document.getElementById('sendTxtBtn');
 
   let activeSessionId = null;
   let activeSubscription = null;
@@ -1577,10 +1632,197 @@
     if (e.target === this) closeQRModal();
   });
 
+  /* ========================================================================
+     15b. ZIP choice modal + multi-file send logic
+     Uses JSZip (loaded from CDN in index.html) when the user chooses
+     "Send as ZIP". Falls back to individual sends if JSZip is unavailable.
+     ======================================================================== */
+  let pendingZipFiles = [];
+  const ZIP_SIZE_WARN = 200 * 1024 * 1024;  // 200MB soft cap
+
+  function showZipChoice(files) {
+    if (!zipChoiceOverlay) return;
+    pendingZipFiles = Array.from(files);
+    const count = pendingZipFiles.length;
+    if (zipChoiceSubtitle) {
+      zipChoiceSubtitle.textContent = 'You selected ' + count + ' file' +
+        (count !== 1 ? 's' : '') + '. How would you like to send them?';
+    }
+    if (zipStatus) {
+      const totalBytes = pendingZipFiles.reduce((s, f) => s + (f.size || 0), 0);
+      if (totalBytes > ZIP_SIZE_WARN) {
+        zipStatus.textContent = 'Total size: ' + formatFileSize(totalBytes) +
+          '. ZIP archiving may take a while or fail on very large sets.';
+        zipStatus.style.color = 'var(--warning)';
+      } else {
+        zipStatus.textContent = 'Total size: ' + formatFileSize(totalBytes);
+        zipStatus.style.color = '';
+      }
+    }
+    zipChoiceOverlay.classList.add('open');
+  }
+
+  function closeZipChoice() {
+    if (!zipChoiceOverlay) return;
+    zipChoiceOverlay.classList.remove('open');
+    pendingZipFiles = [];
+    if (zipStatus) {
+      zipStatus.textContent = '';
+      zipStatus.style.color = '';
+    }
+  }
+
+  async function sendFilesIndividually(files) {
+    if (!conn || !files || !files.length) return;
+    const list = Array.from(files);
+    const hasFolder = list.some(f => f.webkitRelativePath && f.webkitRelativePath.indexOf('/') > -1);
+    if (hasFolder) {
+      const folderName = (list.find(f => f.webkitRelativePath) || list[0])
+        .webkitRelativePath.split('/')[0];
+      systemMessage('systemFolder', { name: folderName, count: list.length });
+      try {
+        await waitForConnectionOpen(conn);
+        for (const file of list) {
+          systemMessage('systemSending', { name: file.name });
+          await sendFile(file, { folder: true, relativePath: file.webkitRelativePath || file.name });
+        }
+        systemMessage('systemFolderSent', { name: folderName });
+      } catch (err) {
+        console.error('Folder transfer error:', err);
+        systemMessage('systemError', { name: folderName });
+      }
+    } else {
+      for (const file of list) {
+        systemMessage('systemSending', { name: file.name });
+        await sendFile(file, { label: 'multi' });
+      }
+    }
+  }
+
+  // Sanitize a path so it cannot escape the archive root.
+  function sanitizeZipPath(path) {
+    let p = String(path || '').replace(/\\/g, '/');
+    // Strip leading slashes and drive prefixes
+    p = p.replace(/^([a-zA-Z]:)?\/+/, '');
+    // Remove any ".." path segments
+    p = p.split('/').filter(seg => seg !== '..' && seg !== '.').join('/');
+    return p;
+  }
+
+  // Avoid duplicate entry names inside the archive by suffixing " (n)".
+  function dedupeName(name, usedSet) {
+    let finalName = name;
+    let counter = 1;
+    while (usedSet.has(finalName)) {
+      const dotIdx = name.lastIndexOf('.');
+      if (dotIdx > 0) {
+        finalName = name.slice(0, dotIdx) + ' (' + counter + ')' + name.slice(dotIdx);
+      } else {
+        finalName = name + ' (' + counter + ')';
+      }
+      counter++;
+    }
+    usedSet.add(finalName);
+    return finalName;
+  }
+
+  async function sendFilesAsZip(files) {
+    if (!conn) return;
+    if (!window.JSZip) {
+      systemMessage('systemError', { name: 'ZIP library failed to load. Sending individually.' });
+      await sendFilesIndividually(files);
+      return;
+    }
+    const list = Array.from(files);
+    const totalBytes = list.reduce((s, f) => s + (f.size || 0), 0);
+    if (totalBytes > ZIP_SIZE_WARN) {
+      if (zipStatus) {
+        zipStatus.textContent = 'Archiving ' + formatFileSize(totalBytes) +
+          '... this may take a moment.';
+        zipStatus.style.color = 'var(--warning)';
+      }
+    }
+    const archiveName = 'webdrop-files.zip';
+    systemMessage('systemSending', { name: archiveName });
+    try {
+      const zip = new JSZip();
+      const usedNames = new Set();
+      for (const file of list) {
+        const originalPath = file.webkitRelativePath || file.name;
+        const safePath = sanitizeZipPath(originalPath);
+        const finalPath = dedupeName(safePath || file.name, usedNames);
+        zip.file(finalPath, file);
+      }
+      const blob = await zip.generateAsync({
+        type: 'blob',
+        compression: 'DEFLATE',
+        compressionOptions: { level: 6 }
+      });
+      const zipFile = new File([blob], archiveName, { type: 'application/zip' });
+      await sendFile(zipFile, { label: 'zip', source: 'multi-zip' });
+      systemMessage('systemSent', { name: archiveName });
+    } catch (err) {
+      console.error('ZIP creation error:', err);
+      systemMessage('systemError', { name: archiveName });
+    }
+  }
+
+  if (zipChoiceClose) zipChoiceClose.addEventListener('click', closeZipChoice);
+  if (zipCancelBtn) zipCancelBtn.addEventListener('click', closeZipChoice);
+  if (zipChoiceOverlay) {
+    zipChoiceOverlay.addEventListener('click', function (e) {
+      if (e.target === this) closeZipChoice();
+    });
+  }
+  if (zipChooseIndivBtn) {
+    zipChooseIndivBtn.addEventListener('click', async function () {
+      const files = pendingZipFiles;
+      closeZipChoice();
+      await sendFilesIndividually(files);
+    });
+  }
+  if (zipChooseArchiveBtn) {
+    zipChooseArchiveBtn.addEventListener('click', async function () {
+      const files = pendingZipFiles;
+      closeZipChoice();
+      await sendFilesAsZip(files);
+    });
+  }
+
+  /* ========================================================================
+     15c. TXT send button + large-text handling
+     The TXT button converts the current msgInput text into a .txt File and
+     sends it via the existing chunked file-transfer path. The regular Send
+     button still sends as a text message, but automatically routes through
+     file transfer if the text exceeds the WebRTC safe message size.
+     ======================================================================== */
+  const TEXT_MESSAGE_LIMIT = 64 * 1024; // 64KB safe ceiling for WebRTC text
+
+  function buildTxtFile(text, filename) {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    return new File([blob], filename, { type: 'text/plain;charset=utf-8' });
+  }
+
+  function sendCurrentInputAsTxt() {
+    const text = msgInput.value;
+    if (!text || !conn) return;
+    const trimmed = text;
+    const timestamp = Date.now();
+    const filename = 'shared-text-' + timestamp + '.txt';
+    const file = buildTxtFile(trimmed, filename);
+    systemMessage('systemSending', { name: filename });
+    sendFile(file, { label: 'manual-txt', source: 'send-as-txt-button' });
+    msgInput.value = '';
+  }
+
+  if (sendTxtBtn) sendTxtBtn.addEventListener('click', sendCurrentInputAsTxt);
+
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' || e.keyCode === 27) {
       if (qrModalOverlay.classList.contains('open')) {
         closeQRModal();
+      } else if (zipChoiceOverlay && zipChoiceOverlay.classList.contains('open')) {
+        closeZipChoice();
       }
     }
   });
