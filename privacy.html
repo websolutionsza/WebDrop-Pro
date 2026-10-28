@@ -63,25 +63,22 @@
             <h2>4. Local Storage and Cookies</h2>
             <p>We use lightweight local browser storage strictly for necessary site functions, such as remembering your user interface preferences (for example, theme choice, device name label, or cookie consent acceptance). We do not use persistent cross-site tracking cookies, advertising cookies, or behavioral profiling scripts.</p>
 
-            <h2>5. Third-Party Hosting</h2>
-            <p>The static web assets for WebDrop Pro are hosted via Cloudflare Pages. Standard anonymous web traffic metadata (such as browser type and IP address) may be processed by hosting infrastructure providers strictly for service security, DDoS protection, and performance optimization. This metadata is not used to build individual profiles.</p>
-
-            <h2>6. WebRTC STUN Servers</h2>
+            <h2>5. WebRTC STUN Servers</h2>
             <p>To establish browser-to-browser connections across different networks, WebDrop Pro uses public Google STUN servers (stun.l.google.com) for the purpose of NAT traversal. STUN servers only see your IP address during the connection setup phase and do not receive any file contents or message payloads. The actual data channel is end-to-end encrypted between the two peers.</p>
 
-            <h2>7. No Sale of Data</h2>
+            <h2>6. No Sale of Data</h2>
             <p>We do not sell, rent, or share any data collected through WebDrop Pro with third parties for marketing or advertising purposes. The service has no advertising integrations and no third-party analytics scripts embedded in the application interface.</p>
 
-            <h2>8. Data Retention</h2>
+            <h2>7. Data Retention</h2>
             <p>Local browser storage persists only on the device where you set your preferences. QR pairing session records expire automatically after 15 minutes. No long-term data store is maintained that links your device to file transfer activity.</p>
 
-            <h2>9. Your Rights</h2>
+            <h2>8. Your Rights</h2>
             <p>Because we do not maintain personal accounts or persistent personal data stores, formal data subject access requests are not required. You may clear all locally stored preferences at any time through your browser's site data controls.</p>
 
-            <h2>10. Changes to This Policy</h2>
+            <h2>9. Changes to This Policy</h2>
             <p>We may update this Privacy Policy from time to time. Changes will be posted on this page with a revised effective date. Continued use of WebDrop Pro after any change indicates acceptance of the updated policy.</p>
 
-            <h2>11. Contact</h2>
+            <h2>10. Contact</h2>
             <p>If you have any questions regarding this Privacy Policy, you can reach out through the WebSolutions SA portal linked in the footer below.</p>
         </div>
 
@@ -96,6 +93,15 @@
     </main>
 
     <script>
+        // Apply saved theme (read same localStorage key the main app uses)
+        (function () {
+            var saved = null;
+            try { saved = localStorage.getItem('webdrop-theme'); } catch (_) {}
+            var useDark = saved === 'dark' || (!saved && window.matchMedia
+                && window.matchMedia('(prefers-color-scheme: dark)').matches)
+                || !saved; // default to dark utilitarian aesthetic
+            document.documentElement.setAttribute('data-theme', useDark ? 'dark' : 'light');
+        })();
         document.getElementById('footerYear').textContent = new Date().getFullYear();
     </script>
 </body>
