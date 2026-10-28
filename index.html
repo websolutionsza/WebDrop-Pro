@@ -207,7 +207,10 @@
                     <div id="pendingAttachments" class="pending-attachments"></div>
                     <div class="chat-input">
                         <input type="text" id="msgInput" placeholder="Type a message..." aria-label="Message input" />
-                        <button id="sendBtn" type="button" aria-label="Send message">
+                        <button class="chat-aux-btn" id="sendTxtBtn" type="button" aria-label="Send as text file" title="Send as .txt file">
+                            <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/></svg>
+                        </button>
+                        <button id="sendBtn" type="button" aria-label="Send message" title="Send as text">
                             <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                         </button>
                     </div>
@@ -306,7 +309,7 @@
                 <div id="qrScanError" class="qr-error"></div>
                 <div class="qr-actions">
                     <button class="qr-toggle-btn" id="qrBackFromScannerBtn" type="button">
-                        <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                        <svg class="svg-icon" viewBox="0  0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
                         <span>Back</span>
                     </button>
                 </div>
@@ -314,10 +317,52 @@
         </div>
     </div>
 
-    <!-- ============ CDN libraries (kept identical for QR scanner compatibility) ============ -->
+    <!-- ============ ZIP choice modal (multi-file send) ============ -->
+    <div class="qr-overlay" id="zipChoiceOverlay" role="dialog" aria-modal="true" aria-labelledby="zipModalTitle">
+        <div class="qr-modal">
+            <button class="modal-close" id="zipChoiceClose" type="button" aria-label="Close send options">
+                <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+            <h2 class="modal-title">
+                <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+                <span id="zipModalTitle">Send multiple files</span>
+            </h2>
+            <p class="qr-choice-subtitle" id="zipChoiceSubtitle">You selected multiple files. How would you like to send them?</p>
+            <div class="qr-choice-view">
+                <button class="qr-mode-btn" id="zipChooseIndivBtn" type="button">
+                    <span class="mode-icon" aria-hidden="true">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                    </span>
+                    <span>
+                        Send individually
+                        <small>Each file is sent as a separate transfer with its original name.</small>
+                    </span>
+                </button>
+                <button class="qr-mode-btn" id="zipChooseArchiveBtn" type="button">
+                    <span class="mode-icon" aria-hidden="true">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+                    </span>
+                    <span>
+                        Send as ZIP
+                        <small>Files are packaged into one .zip archive (default: webdrop-files.zip).</small>
+                    </span>
+                </button>
+            </div>
+            <div class="zip-status" id="zipStatus"></div>
+            <div class="qr-actions">
+                <button class="qr-toggle-btn" id="zipCancelBtn" type="button">
+                    <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    <span>Cancel</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ CDN libraries ============ -->
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <!--
         ============================================================================
