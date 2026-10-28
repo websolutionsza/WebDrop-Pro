@@ -96,6 +96,15 @@
     </main>
 
     <script>
+        // Apply saved theme (read same localStorage key the main app uses)
+        (function () {
+            var saved = null;
+            try { saved = localStorage.getItem('webdrop-theme'); } catch (_) {}
+            var useDark = saved === 'dark' || (!saved && window.matchMedia
+                && window.matchMedia('(prefers-color-scheme: dark)').matches)
+                || !saved; // default to dark utilitarian aesthetic
+            document.documentElement.setAttribute('data-theme', useDark ? 'dark' : 'light');
+        })();
         document.getElementById('footerYear').textContent = new Date().getFullYear();
     </script>
 </body>
