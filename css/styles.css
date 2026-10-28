@@ -1,10 +1,10 @@
 /* ==========================================================================
    WebDrop Pro - Stylesheet
-   Dark utilitarian aesthetic. Glassmorphism footer. System sans-serif.
-   No em dashes. No Font Awesome. No fake peer counts. No neon overload.
+   Dual theme (light default + dark utilitarian). Glassmorphism footer.
+   System sans-serif. Inline SVG icons. No em dashes. No fake peer counts.
    ========================================================================== */
 
-/* ---------- 1. Reset & Tokens ---------- */
+/* ---------- 1. Reset ---------- */
 *,
 *::before,
 *::after {
@@ -13,26 +13,109 @@
   box-sizing: border-box;
 }
 
+/* ---------- 2. Theme tokens ---------- */
+/*
+   Light theme is the :root default. Dark theme overrides via [data-theme="dark"].
+   The header is always dark (utilitarian) in both themes; its tokens live in
+   :root only and are NOT redefined in [data-theme="dark"].
+*/
 :root {
-  /* Surface palette - deep slate, never pure black or pure white */
+  /* Light surface palette - subtle warm-cool gray, never pure white */
+  --bg-page:        #eef2f8;
+  --bg-surface:     #f7f9fc;
+  --bg-raised:      #ffffff;
+  --bg-input:       #ffffff;
+  --bg-elevated:    #ffffff;
+
+  /* Light text */
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #64748b;
+  --text-inverse:   #f8fafc;
+
+  /* Light borders */
+  --border:         rgba(15, 23, 42, 0.08);
+  --border-strong:  rgba(15, 23, 42, 0.16);
+  --border-accent:  rgba(37, 99, 235, 0.40);
+
+  /* Accent - single refined blue (darker for light-bg contrast) */
+  --accent:         #2563eb;
+  --accent-hover:   #1d4ed8;
+  --accent-soft:    rgba(37, 99, 235, 0.10);
+  --accent-glow:    rgba(37, 99, 235, 0.22);
+
+  --success:        #16a34a;
+  --success-soft:   rgba(22, 163, 74, 0.12);
+  --danger:         #dc2626;
+  --danger-soft:    rgba(220, 38, 38, 0.10);
+  --warning:        #b45309;
+
+  /* Header - always dark in both themes for utilitarian look */
+  --header-bg:        #0f172a;
+  --header-text:      #e6ecf5;
+  --header-text-muted:#94a3b8;
+  --header-border:    rgba(255, 255, 255, 0.08);
+  --header-input-bg:  rgba(255, 255, 255, 0.06);
+  --header-input-bd:  rgba(255, 255, 255, 0.12);
+  --header-input-bd-hover: rgba(255, 255, 255, 0.22);
+  --header-input-bd-focus: rgba(91, 141, 239, 0.55);
+  --header-hover-bg:  rgba(255, 255, 255, 0.04);
+
+  /* Glass footer - light variant */
+  --glass-bg:        rgba(247, 249, 252, 0.72);
+  --glass-blur:      14px;
+  --glass-border:    rgba(15, 23, 42, 0.08);
+
+  /* Sizing */
+  --radius-sm:  6px;
+  --radius:      10px;
+  --radius-lg:  14px;
+  --header-h:    64px;
+  --content-max: 1120px;
+
+  /* Motion */
+  --transition:      160ms ease;
+  --transition-slow:  320ms ease;
+
+  /* Typography - system sans-serif, no Inter/Geist/Space Grotesk */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
+               Consolas, "Courier New", monospace;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+  --shadow:     0 4px 12px rgba(15, 23, 42, 0.10);
+  --shadow-lg:  0 12px 32px rgba(15, 23, 42, 0.14);
+
+  /* Modal overlay scrim */
+  --scrim: rgba(8, 14, 26, 0.55);
+
+  /* Scanner ring palette */
+  --radar-bg: var(--bg-input);
+  --radar-grid: var(--border);
+}
+
+[data-theme="dark"] {
+  /* Dark surface palette - deep slate */
   --bg-page:        #0a1120;
   --bg-surface:     #111a2c;
   --bg-raised:      #16223a;
   --bg-input:       #0e1626;
   --bg-elevated:    #1b2942;
 
-  /* Text */
+  /* Dark text */
   --text-primary:   #e6ecf5;
   --text-secondary: #a8b3c7;
   --text-muted:     #6c7a93;
-  --text-inverse:   #f1f5f9;
+  --text-inverse:   #f8fafc;
 
-  /* Borders */
+  /* Dark borders */
   --border:         rgba(255, 255, 255, 0.07);
   --border-strong:  rgba(255, 255, 255, 0.12);
   --border-accent:  rgba(91, 141, 239, 0.35);
 
-  /* Accent - a single refined blue, not neon */
+  /* Accent - lighter blue for dark-bg contrast */
   --accent:         #5b8def;
   --accent-hover:   #4a7fd9;
   --accent-soft:    rgba(91, 141, 239, 0.12);
@@ -44,37 +127,23 @@
   --danger-soft:    rgba(239, 68, 68, 0.14);
   --warning:        #f59e0b;
 
-  /* Sizing */
-  --radius-sm:  6px;
-  --radius:     10px;
-  --radius-lg:  14px;
-  --header-h:   64px;
-  --content-max: 1120px;
+  /* Glass footer - dark variant */
+  --glass-bg:        rgba(17, 26, 44, 0.55);
+  --glass-blur:      14px;
+  --glass-border:    rgba(255, 255, 255, 0.08);
 
-  /* Motion - restrained, used only for state change */
-  --transition: 160ms ease;
-  --transition-slow: 320ms ease;
-
-  /* Typography */
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-               "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
-               Consolas, "Courier New", monospace;
-
-  /* Shadows - subtle, not theatrical */
+  /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
-  --shadow:    0 4px 12px rgba(0, 0, 0, 0.28);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.35);
+  --shadow:     0 4px 12px rgba(0, 0, 0, 0.28);
+  --shadow-lg:  0 12px 32px rgba(0, 0, 0, 0.35);
 
-  /* Glass footer */
-  --glass-bg:     rgba(17, 26, 44, 0.55);
-  --glass-blur:   14px;
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --scrim: rgba(5, 10, 20, 0.7);
+
+  --radar-grid: rgba(255, 255, 255, 0.06);
 }
 
-/* ---------- 2. Base ---------- */
-html,
-body {
+/* ---------- 3. Base ---------- */
+html, body {
   width: 100%;
   min-height: 100vh;
   background: var(--bg-page);
@@ -85,6 +154,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  transition: background var(--transition), color var(--transition);
 }
 
 body {
@@ -112,9 +182,7 @@ button {
   cursor: pointer;
 }
 
-input,
-select,
-textarea {
+input, select, textarea {
   font-family: inherit;
   font-size: inherit;
   color: inherit;
@@ -130,7 +198,7 @@ textarea {
   outline-offset: 2px;
 }
 
-/* ---------- 3. SVG icon defaults ---------- */
+/* ---------- 4. SVG icon defaults ---------- */
 .svg-icon {
   width: 18px;
   height: 18px;
@@ -141,11 +209,11 @@ textarea {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.svg-icon.lg { width: 22px; height: 22px; }
-.svg-icon.sm { width: 14px; height: 14px; }
-.svg-icon.xl { width: 28px; height: 28px; }
+.svg-icon.lg  { width: 22px; height: 22px; }
+.svg-icon.sm  { width: 14px; height: 14px; }
+.svg-icon.xl  { width: 28px; height: 28px; }
 
-/* ---------- 4. Layout shell ---------- */
+/* ---------- 5. Layout shell ---------- */
 #app {
   display: flex;
   flex-direction: column;
@@ -153,15 +221,15 @@ textarea {
   background: var(--bg-page);
 }
 
-/* ---------- 5. Header ---------- */
+/* ---------- 6. Header (always dark) ---------- */
 .header {
   position: sticky;
   top: 0;
   z-index: 50;
   height: var(--header-h);
   padding: 0 24px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border);
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--header-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -186,8 +254,8 @@ textarea {
   position: relative;
 }
 .header-logo-btn:hover {
-  border-color: var(--border-strong);
-  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--header-input-bd);
+  background: var(--header-hover-bg);
 }
 .header-logo-btn:focus-visible {
   outline: 2px solid var(--accent);
@@ -217,13 +285,13 @@ textarea {
   line-height: 1.15;
 }
 .header-title strong {
-  color: var(--text-primary);
+  color: var(--header-text);
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
 .header-title small {
-  color: var(--text-muted);
+  color: var(--header-text-muted);
   font-size: 0.72rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -239,23 +307,24 @@ textarea {
 .header-controls input,
 .header-controls select {
   height: 34px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
+  background: var(--header-input-bg);
+  border: 1px solid var(--header-input-bd);
   border-radius: var(--radius-sm);
   padding: 0 12px;
   font-size: 0.85rem;
-  color: var(--text-primary);
+  color: var(--header-text);
   transition: border-color var(--transition), background var(--transition);
   min-width: 120px;
 }
+.header-controls input::placeholder { color: var(--header-text-muted); }
 .header-controls input:hover,
 .header-controls select:hover {
-  border-color: var(--border-strong);
+  border-color: var(--header-input-bd-hover);
 }
 .header-controls input:focus,
 .header-controls select:focus {
-  border-color: var(--accent);
-  background: var(--bg-raised);
+  border-color: var(--header-input-bd-focus);
+  background: rgba(255, 255, 255, 0.10);
   outline: none;
 }
 
@@ -265,20 +334,19 @@ textarea {
   justify-content: center;
   width: 34px;
   height: 34px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--header-input-bd);
   border-radius: var(--radius-sm);
-  background: var(--bg-input);
-  color: var(--text-secondary);
+  background: var(--header-input-bg);
+  color: var(--header-text);
   transition: border-color var(--transition), color var(--transition),
               background var(--transition);
 }
 .icon-btn:hover {
-  border-color: var(--border-strong);
-  color: var(--text-primary);
-  background: var(--bg-raised);
+  border-color: var(--header-input-bd-hover);
+  background: var(--header-hover-bg);
 }
 
-/* ---------- 6. Content ---------- */
+/* ---------- 7. Content ---------- */
 .content {
   flex: 1;
   width: 100%;
@@ -287,7 +355,7 @@ textarea {
   padding: 28px 24px 48px;
 }
 
-/* ---------- 7. Card primitive ---------- */
+/* ---------- 8. Card primitive ---------- */
 .card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -295,7 +363,7 @@ textarea {
   padding: 20px 22px;
 }
 
-/* ---------- 8. ID card ---------- */
+/* ---------- 9. ID card ---------- */
 .id-card {
   display: flex;
   align-items: center;
@@ -372,7 +440,8 @@ textarea {
   padding: 6px 12px;
   background: var(--success-soft);
   color: var(--success);
-  border: 1px solid rgba(74, 222, 128, 0.25);
+  border: 1px solid var(--success);
+  border-color: color-mix(in srgb, var(--success) 30%, transparent);
   border-radius: var(--radius-sm);
   font-size: 0.78rem;
   font-weight: 500;
@@ -390,7 +459,7 @@ textarea {
   50%      { opacity: 0.35; }
 }
 
-/* ---------- 9. Network scanner ---------- */
+/* ---------- 10. Network scanner ---------- */
 .scanner-section {
   text-align: center;
   margin-bottom: 20px;
@@ -419,6 +488,12 @@ textarea {
 .scanner-head .scanner-icon {
   color: var(--accent);
 }
+.scanner-head .refresh-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
 
 .scanner-ring {
   position: relative;
@@ -426,7 +501,7 @@ textarea {
   height: 200px;
   margin: 0 auto;
   border-radius: 50%;
-  background: var(--bg-input);
+  background: var(--radar-bg);
   border: 1px solid var(--border-strong);
   overflow: hidden;
 }
@@ -437,7 +512,7 @@ textarea {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--radar-grid);
   pointer-events: none;
 }
 .scanner-ring::before { inset: 18px; }
@@ -458,6 +533,7 @@ textarea {
   );
   animation: scanner-sweep 3.4s linear infinite;
   opacity: 0.55;
+  will-change: transform;
 }
 @keyframes scanner-sweep {
   to { transform: rotate(360deg); }
@@ -492,7 +568,7 @@ textarea {
   letter-spacing: 0.01em;
 }
 
-/* ---------- 10. Connection panel ---------- */
+/* ---------- 11. Connection panel ---------- */
 .connection-panel {
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -518,6 +594,7 @@ textarea {
   color: var(--text-primary);
   transition: border-color var(--transition), background var(--transition);
 }
+.connection-row input::placeholder { color: var(--text-muted); }
 .connection-row input:hover {
   border-color: var(--border-strong);
 }
@@ -564,14 +641,14 @@ textarea {
   color: #06210f;
 }
 .btn-success:hover {
-  background: #38c76b;
+  background: color-mix(in srgb, var(--success) 88%, #000);
 }
 .btn-danger {
   background: var(--danger);
   color: #fff;
 }
 .btn-danger:hover {
-  background: #d33a3a;
+  background: color-mix(in srgb, var(--danger) 88%, #000);
 }
 .btn:disabled {
   opacity: 0.5;
@@ -589,7 +666,7 @@ textarea {
   border-radius: var(--radius-sm);
 }
 
-/* ---------- 11. Transfer area ---------- */
+/* ---------- 12. Transfer area ---------- */
 .transfer-area {
   display: none;
 }
@@ -638,7 +715,7 @@ textarea {
   color: var(--accent);
 }
 
-/* ---------- 12. Drop zone ---------- */
+/* ---------- 13. Drop zone ---------- */
 .drop-zone {
   position: relative;
   margin-bottom: 16px;
@@ -670,6 +747,7 @@ textarea {
   background: var(--bg-elevated);
   color: var(--accent);
   margin-bottom: 10px;
+  border: 1px solid var(--border);
 }
 .drop-zone strong {
   display: block;
@@ -690,7 +768,7 @@ textarea {
   justify-content: center;
 }
 
-/* Inline file type triggers - kept minimal, not oversized pills */
+/* ---------- 14. File tray ---------- */
 .file-tray {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -726,7 +804,7 @@ textarea {
 }
 .file-tray input { display: none; }
 
-/* ---------- 13. Chat area ---------- */
+/* ---------- 15. Chat area ---------- */
 .chat-area {
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -827,7 +905,7 @@ textarea {
   height: 22px;
   border-radius: 4px;
   color: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.55;
   transition: opacity var(--transition), color var(--transition),
               background var(--transition);
 }
@@ -844,7 +922,7 @@ textarea {
 .file-attachment {
   margin-top: 8px;
   padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-input);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
@@ -926,7 +1004,7 @@ textarea {
 
 .chat-input {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   padding: 12px 16px;
   background: var(--bg-raised);
   border-top: 1px solid var(--border);
@@ -942,6 +1020,7 @@ textarea {
   color: var(--text-primary);
   transition: border-color var(--transition), background var(--transition);
 }
+.chat-input input::placeholder { color: var(--text-muted); }
 .chat-input input:focus {
   border-color: var(--accent);
   background: var(--bg-surface);
@@ -961,8 +1040,18 @@ textarea {
 .chat-input button:hover {
   background: var(--accent-hover);
 }
+.chat-input .chat-aux-btn {
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.chat-input .chat-aux-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--accent);
+  border-color: var(--border-accent);
+}
 
-/* ---------- 14. Glassmorphism Footer ---------- */
+/* ---------- 16. Glassmorphism footer ---------- */
 .footer {
   position: relative;
   margin-top: auto;
@@ -1011,7 +1100,7 @@ textarea {
   user-select: none;
 }
 
-/* ---------- 15. Cookie consent ---------- */
+/* ---------- 17. Cookie consent ---------- */
 .cookie-consent {
   position: fixed;
   bottom: 0;
@@ -1048,7 +1137,7 @@ textarea {
   color: var(--accent);
 }
 
-/* ---------- 16. Loading spinner ---------- */
+/* ---------- 18. Loading spinner ---------- */
 .loading {
   display: inline-block;
   width: 14px;
@@ -1063,12 +1152,12 @@ textarea {
   to { transform: rotate(360deg); }
 }
 
-/* ---------- 17. QR Modal ---------- */
+/* ---------- 19. Modal overlays (QR + ZIP choice + generic) ---------- */
 .qr-overlay,
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 10, 20, 0.7);
+  background: var(--scrim);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: none;
@@ -1137,18 +1226,22 @@ textarea {
   color: var(--accent);
 }
 
-.qr-choice-view {
+.qr-choice-view,
+.choice-view {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.qr-choice-subtitle {
+.qr-choice-subtitle,
+.choice-subtitle {
   text-align: center;
   color: var(--text-muted);
   font-size: 0.85rem;
   margin-bottom: 6px;
 }
-.qr-mode-btn {
+
+.qr-mode-btn,
+.choice-btn {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -1164,11 +1257,13 @@ textarea {
   font-weight: 600;
   transition: border-color var(--transition), background var(--transition);
 }
-.qr-mode-btn:hover {
+.qr-mode-btn:hover,
+.choice-btn:hover {
   border-color: var(--border-accent);
   background: var(--bg-elevated);
 }
-.qr-mode-btn .mode-icon {
+.qr-mode-btn .mode-icon,
+.choice-btn .mode-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1179,7 +1274,8 @@ textarea {
   color: var(--accent);
   flex-shrink: 0;
 }
-.qr-mode-btn small {
+.qr-mode-btn small,
+.choice-btn small {
   display: block;
   color: var(--text-muted);
   font-size: 0.74rem;
@@ -1287,7 +1383,15 @@ textarea {
   line-height: 1.5;
 }
 
-/* ---------- 18. Legal pages (terms.html / privacy.html) ---------- */
+.zip-status {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  min-height: 1.6em;
+  margin-top: 4px;
+}
+
+/* ---------- 20. Legal pages ---------- */
 .legal-page {
   max-width: 760px;
   margin: 0 auto;
@@ -1371,7 +1475,107 @@ textarea {
   color: var(--accent);
 }
 
-/* ---------- 19. Responsive ---------- */
+/* ---------- 21. 404 page ---------- */
+.error-page {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+.error-card {
+  max-width: 520px;
+  width: 100%;
+  text-align: center;
+  padding: 36px 28px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.error-code {
+  font-family: var(--font-mono);
+  font-size: 4.5rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 16px;
+  animation: error-pulse 2.8s ease-in-out infinite;
+}
+@keyframes error-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+.error-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+.error-body {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+.error-radar {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: var(--radar-bg);
+  border: 1px solid var(--border-strong);
+  position: relative;
+  overflow: hidden;
+}
+.error-radar::before,
+.error-radar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px dashed var(--radar-grid);
+  pointer-events: none;
+}
+.error-radar::before { inset: 12px; }
+.error-radar::after  { inset: 28px; }
+.error-radar .error-sweep {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 45px;
+  height: 45px;
+  transform-origin: 0 0;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 280deg,
+    var(--accent-glow) 360deg
+  );
+  animation: scanner-sweep 4s linear infinite;
+  opacity: 0.5;
+}
+.error-radar .error-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* ---------- 22. Responsive ---------- */
 @media (max-width: 720px) {
   .header {
     padding: 0 16px;
@@ -1421,6 +1625,9 @@ textarea {
   .chat-messages {
     height: 220px;
   }
+  .error-code {
+    font-size: 3.5rem;
+  }
 }
 
 @media (max-width: 460px) {
@@ -1440,12 +1647,33 @@ textarea {
   }
 }
 
+/* ---------- 23. Reduced motion ----------
+   Respect user preference but keep functional/state animations
+   (badge pulse, radar sweep, logo spin) intact, just slowed. Decorative
+   transitions are reduced. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.001ms !important;
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Keep the radar visibly rotating so users still see scanning state,
+     but at a much slower, calmer pace. */
+  .scanner-sweep {
+    animation: scanner-sweep 12s linear infinite !important;
+  }
+  .error-radar .error-sweep {
+    animation: scanner-sweep 16s linear infinite !important;
+  }
+  /* Keep logo-spin functional but slower. */
+  .header-logo-btn.spinning .header-logo {
+    animation: logo-rotate 2.4s linear infinite !important;
+  }
+  /* Loading spinner stays usable but slower. */
+  .loading {
+    animation: spin 2s linear infinite !important;
   }
 }
