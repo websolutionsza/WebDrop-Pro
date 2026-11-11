@@ -1,1845 +1,940 @@
-/* ============================================================================
-   WebDrop Pro | application logic
-   - Preserves the /api/session Postbase contract (create / connect / get)
-   - Adds: clickable logo refresh, drag-and-drop transfer, inline SVG icons
-   - Removes: fake peer count simulation (scanner now reports real state only)
-   - Uses inline SVG icons everywhere (no Font Awesome, no Lucide library)
-   - No em dashes in any interface copy
-   ============================================================================ */
+// ============================================================================
+// app.js - main UI orchestration for WebDrop Pro
+// Coordinates signaling, WebRTC, QR, and ZIP modules.
+// ============================================================================
 
-(function () {
-  'use strict';
+import { SignalingClient, generatePeerId, generateSessionCode, formatSessionCode, cleanSessionCode } from './signaling.js';
+import { WebDropConnection, sha256 } from './webrtc.js';
+import { generateQR, buildQRPayload, QRScanner, parseQRPayload } from './qr.js';
+import { createZip } from './zip.js';
 
-  /* ---------- 0. Inline SVG icon library (no icon fonts) ---------- */
-  const ICONS = {
-    sun: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>',
-    moon: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
-    copy: '<svg class="svg-icon sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
-    check: '<svg class="svg-icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>',
-    paperclip: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11l-9.5 9.5a5 5 0 0 1-7.1-7.1l9.5-9.5a3.5 3.5 0 0 1 5 5l-9.5 9.5a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>',
-    download: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>',
-    times: '<svg class="svg-icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>',
-    file: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>'
-  };
+// Inline SVG icons (no Font Awesome, no Lucide library).
+const ICONS = {
+  sun: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>',
+  moon: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+  copy: '<svg class="svg-icon sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  check: '<svg class="svg-icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>',
+  download: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>',
+  paperclip: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11l-9.5 9.5a5 5 0 0 1-7.1-7.1l9.5-9.5a3.5 3.5 0 0 1 5 5l-9.5 9.5a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>',
+  times: '<svg class="svg-icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  file: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>'
+};
 
-  /* ========================================================================
-     1. Secure session API
-     Contract preserved exactly. Server-side secret stays in /api/session.
-     ======================================================================== */
-  const SESSION_ENDPOINT = '/api/session';
+// TipNest support button placeholder. Empty string = button hidden.
+// Set this to your TipNest URL when TipNest is ready.
+const TIPNEST_URL = "";
 
-  async function apiCreateSession(sessionId) {
-    const res = await fetch(SESSION_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ op: 'create', id: sessionId })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Create failed');
-    return data;
+// Connection status text for the indicator.
+const STATUS_TEXT = {
+  idle: 'Idle, awaiting connection',
+  scanning: 'Scanning for peers...',
+  connecting: 'Connecting...',
+  connected: 'Connected',
+  disconnected: 'Disconnected',
+  failed: 'Connection failed',
+  backendUnavailable: 'Backend temporarily unavailable'
+};
+
+const CONNECTION_TYPE_TEXT = {
+  local: 'Local network connection',
+  direct: 'Direct internet P2P',
+  turn: 'TURN-relayed connection',
+  unknown: 'Connected'
+};
+
+// Application state.
+const state = {
+  peerId: null,
+  sessionCode: null,
+  role: null,                 // 'sender' | 'receiver' | null
+  signaling: null,            // SignalingClient instance
+  connection: null,           // WebDropConnection instance
+  iceServers: [],
+  transferInProgress: false
+};
+
+// DOM references (populated on DOMContentLoaded).
+let dom = {};
+
+// ============================================================================
+// Theme toggle (light/dark, persisted in localStorage)
+// ============================================================================
+const THEME_KEY = 'webdrop-theme';
+
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const btn = dom.themeToggle;
+  if (btn) {
+    btn.innerHTML = dark ? ICONS.sun : ICONS.moon;
+    btn.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
   }
+}
 
-  async function apiGetSession(sessionId) {
-    const res = await fetch(
-      SESSION_ENDPOINT + '?id=' + encodeURIComponent(sessionId),
-      { method: 'GET', headers: { 'Accept': 'application/json' } }
-    );
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Query failed');
-    return data;
-  }
-
-  async function apiMarkConnected(sessionId) {
-    const res = await fetch(SESSION_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ op: 'connect', id: sessionId })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Update failed');
-    return data;
-  }
-
-  /* ========================================================================
-     2. i18n
-     ======================================================================== */
-  const i18n = {
-    en: {
-      deviceId: 'Your Device ID', active: 'Active', networkScanner: 'Network Scanner',
-      connect: 'Connect', ready: 'Ready to connect',
-      connectedTo: 'Connected to', disconnect: 'Disconnect',
-      sendDocument: 'Send Document', sendImages: 'Send Images',
-      sendVideo: 'Send Video', sendFolder: 'Send Folder',
-      secureChat: 'Secure Chat',
-      dropTitle: 'Drop files to transfer',
-      dropSubtitle: 'Drag files, images, or folders anywhere into this window to send them over the secure P2P link.',
-      scannerIdle: 'Idle, awaiting connection',
-      scannerScanning: 'Scanning for peers...',
-      scannerConnected: '1 peer connected',
-      systemConnected: 'Secure connection established',
-      systemClosed: 'Connection closed',
-      systemSending: 'Sending {name}...',
-      systemSent: 'Sent: {name}',
-      systemFolder: 'Sending folder: {name} ({count} files)',
-      systemFolderSent: 'Folder sent: {name}',
-      systemError: 'Error sending {name}',
-      fileDownload: 'Download', connecting: 'Connecting...',
-      connected: 'Connected successfully', failed: 'Connection failed',
-      pastedTextAttached: 'Pasted text saved as {name}',
-      removeAttachment: 'Remove attachment',
-      qrWaiting: 'Waiting for scan...', qrConnecting: 'Connecting via QR...',
-      qrConnected: 'Connected! You can close this.', qrError: 'Error: {msg}',
-      qrRefresh: 'Refresh QR', qrScan: 'Scan QR', qrShowQR: 'Show my QR'
-    },
-    es: {
-      deviceId: 'Tu ID de dispositivo', active: 'Activo', networkScanner: 'Escáner de red',
-      connect: 'Conectar', ready: 'Listo para conectar',
-      connectedTo: 'Conectado a', disconnect: 'Desconectar',
-      sendDocument: 'Enviar documento', sendImages: 'Enviar imágenes',
-      sendVideo: 'Enviar video', sendFolder: 'Enviar carpeta',
-      secureChat: 'Chat seguro',
-      dropTitle: 'Suelta archivos para transferir',
-      dropSubtitle: 'Arrastra archivos, imágenes o carpetas a esta ventana para enviarlos por el enlace P2P seguro.',
-      scannerIdle: 'Inactivo, esperando conexión',
-      scannerScanning: 'Buscando pares...',
-      scannerConnected: '1 par conectado',
-      systemConnected: 'Conexión segura establecida',
-      systemClosed: 'Conexión cerrada',
-      systemSending: 'Enviando {name}...',
-      systemSent: 'Enviado: {name}',
-      systemFolder: 'Enviando carpeta: {name} ({count} archivos)',
-      systemFolderSent: 'Carpeta enviada: {name}',
-      systemError: 'Error al enviar {name}',
-      fileDownload: 'Descargar', connecting: 'Conectando...',
-      connected: 'Conectado exitosamente', failed: 'Conexión fallida',
-      pastedTextAttached: 'Texto pegado guardado como {name}',
-      removeAttachment: 'Quitar adjunto',
-      qrWaiting: 'Esperando escaneo...', qrConnecting: 'Conectando vía QR...',
-      qrConnected: '¡Conectado! Puedes cerrar.', qrError: 'Error: {msg}',
-      qrRefresh: 'Refrescar QR', qrScan: 'Escanear QR', qrShowQR: 'Mostrar mi QR'
-    },
-    fr: {
-      deviceId: 'Votre ID d\'appareil', active: 'Actif', networkScanner: 'Scanner réseau',
-      connect: 'Connecter', ready: 'Prêt à connecter',
-      connectedTo: 'Connecté à', disconnect: 'Déconnecter',
-      sendDocument: 'Envoyer un document', sendImages: 'Envoyer des images',
-      sendVideo: 'Envoyer une vidéo', sendFolder: 'Envoyer un dossier',
-      secureChat: 'Chat sécurisé',
-      dropTitle: 'Déposez des fichiers à transférer',
-      dropSubtitle: 'Glissez des fichiers, images ou dossiers dans cette fenêtre pour les envoyer via le lien P2P sécurisé.',
-      scannerIdle: 'Inactif, en attente de connexion',
-      scannerScanning: 'Recherche de pairs...',
-      scannerConnected: '1 pair connecté',
-      systemConnected: 'Connexion sécurisée établie',
-      systemClosed: 'Connexion fermée',
-      systemSending: 'Envoi de {name}...',
-      systemSent: 'Envoyé : {name}',
-      systemFolder: 'Envoi du dossier : {name} ({count} fichiers)',
-      systemFolderSent: 'Dossier envoyé : {name}',
-      systemError: 'Erreur lors de l\'envoi de {name}',
-      fileDownload: 'Télécharger', connecting: 'Connexion...',
-      connected: 'Connecté avec succès', failed: 'Échec de la connexion',
-      pastedTextAttached: 'Texte collé enregistré comme {name}',
-      removeAttachment: 'Supprimer la pièce jointe',
-      qrWaiting: 'En attente de scan...', qrConnecting: 'Connexion via QR...',
-      qrConnected: 'Connecté ! Vous pouvez fermer.', qrError: 'Erreur : {msg}',
-      qrRefresh: 'Rafraîchir QR', qrScan: 'Scanner QR', qrShowQR: 'Afficher mon QR'
-    },
-    de: {
-      deviceId: 'Ihre Geräte-ID', active: 'Aktiv', networkScanner: 'Netzwerk-Scanner',
-      connect: 'Verbinden', ready: 'Bereit zum Verbinden',
-      connectedTo: 'Verbunden mit', disconnect: 'Trennen',
-      sendDocument: 'Dokument senden', sendImages: 'Bilder senden',
-      sendVideo: 'Video senden', sendFolder: 'Ordner senden',
-      secureChat: 'Sicherer Chat',
-      dropTitle: 'Dateien zum Übertragen ablegen',
-      dropSubtitle: 'Ziehen Sie Dateien, Bilder oder Ordner in dieses Fenster, um sie über die sichere P2P-Verbindung zu senden.',
-      scannerIdle: 'Inaktiv, warte auf Verbindung',
-      scannerScanning: 'Suche nach Peers...',
-      scannerConnected: '1 Peer verbunden',
-      systemConnected: 'Sichere Verbindung hergestellt',
-      systemClosed: 'Verbindung geschlossen',
-      systemSending: 'Sende {name}...',
-      systemSent: 'Gesendet: {name}',
-      systemFolder: 'Sende Ordner: {name} ({count} Dateien)',
-      systemFolderSent: 'Ordner gesendet: {name}',
-      systemError: 'Fehler beim Senden von {name}',
-      fileDownload: 'Herunterladen', connecting: 'Verbinde...',
-      connected: 'Erfolgreich verbunden', failed: 'Verbindung fehlgeschlagen',
-      pastedTextAttached: 'Eingefügter Text als {name} gespeichert',
-      removeAttachment: 'Anhang entfernen',
-      qrWaiting: 'Warte auf Scan...', qrConnecting: 'Verbinde via QR...',
-      qrConnected: 'Verbunden! Sie können schließen.', qrError: 'Fehler: {msg}',
-      qrRefresh: 'QR aktualisieren', qrScan: 'QR scannen', qrShowQR: 'Mein QR anzeigen'
-    },
-    pt: {
-      deviceId: 'Seu ID de dispositivo', active: 'Ativo', networkScanner: 'Scanner de rede',
-      connect: 'Conectar', ready: 'Pronto para conectar',
-      connectedTo: 'Conectado a', disconnect: 'Desconectar',
-      sendDocument: 'Enviar documento', sendImages: 'Enviar imagens',
-      sendVideo: 'Enviar vídeo', sendFolder: 'Enviar pasta',
-      secureChat: 'Chat seguro',
-      dropTitle: 'Solte arquivos para transferir',
-      dropSubtitle: 'Arraste arquivos, imagens ou pastas para esta janela para enviá-los pelo link P2P seguro.',
-      scannerIdle: 'Inativo, aguardando conexão',
-      scannerScanning: 'Procurando pares...',
-      scannerConnected: '1 par conectado',
-      systemConnected: 'Conexão segura estabelecida',
-      systemClosed: 'Conexão encerrada',
-      systemSending: 'Enviando {name}...',
-      systemSent: 'Enviado: {name}',
-      systemFolder: 'Enviando pasta: {name} ({count} arquivos)',
-      systemFolderSent: 'Pasta enviada: {name}',
-      systemError: 'Erro ao enviar {name}',
-      fileDownload: 'Baixar', connecting: 'Conectando...',
-      connected: 'Conectado com sucesso', failed: 'Falha na conexão',
-      pastedTextAttached: 'Texto colado salvo como {name}',
-      removeAttachment: 'Remover anexo',
-      qrWaiting: 'Aguardando escaneamento...', qrConnecting: 'Conectando via QR...',
-      qrConnected: 'Conectado! Você pode fechar.', qrError: 'Erro: {msg}',
-      qrRefresh: 'Atualizar QR', qrScan: 'Escanear QR', qrShowQR: 'Mostrar meu QR'
-    },
-    zh: {
-      deviceId: '您的设备ID', active: '活跃', networkScanner: '网络扫描仪',
-      connect: '连接', ready: '准备连接',
-      connectedTo: '已连接到', disconnect: '断开连接',
-      sendDocument: '发送文档', sendImages: '发送图片',
-      sendVideo: '发送视频', sendFolder: '发送文件夹',
-      secureChat: '安全聊天',
-      dropTitle: '拖放文件以传输',
-      dropSubtitle: '将文件、图片或文件夹拖到此窗口任意位置，通过安全 P2P 链接发送。',
-      scannerIdle: '空闲，等待连接',
-      scannerScanning: '正在扫描对端...',
-      scannerConnected: '已连接 1 个对端',
-      systemConnected: '安全连接已建立',
-      systemClosed: '连接已关闭',
-      systemSending: '正在发送 {name}...',
-      systemSent: '已发送：{name}',
-      systemFolder: '正在发送文件夹：{name}（{count} 个文件）',
-      systemFolderSent: '文件夹已发送：{name}',
-      systemError: '发送 {name} 时出错',
-      fileDownload: '下载', connecting: '连接中...',
-      connected: '连接成功', failed: '连接失败',
-      pastedTextAttached: '粘贴的文本已保存为 {name}',
-      removeAttachment: '删除附件',
-      qrWaiting: '等待扫描...', qrConnecting: '通过QR连接中...',
-      qrConnected: '已连接！您可以关闭此窗口。', qrError: '错误：{msg}',
-      qrRefresh: '刷新QR', qrScan: '扫描QR', qrShowQR: '显示我的QR'
-    }
-  };
-
-  let currentLang = 'en';
-
-  function t(key, vars) {
-    let str = (i18n[currentLang] && i18n[currentLang][key]) || i18n.en[key] || key;
-    if (vars) {
-      for (const [k, v] of Object.entries(vars)) {
-        str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), v);
-      }
-    }
-    return str;
-  }
-
-  function updateUI() {
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-      const key = el.getAttribute('data-i18n');
-      el.textContent = t(key);
-    });
-    const ph = document.getElementById('targetId');
-    if (ph) ph.placeholder = t('connect') + ' ID...';
-    const msgPh = document.getElementById('msgInput');
-    if (msgPh) msgPh.placeholder = t('secureChat') + '...';
-    const st = document.getElementById('statusText');
-    if (st && !st.dataset.custom) st.textContent = t('ready');
-    const scannerState = document.getElementById('scannerState');
-    if (scannerState && conn && conn.open) {
-      scannerState.textContent = t('scannerConnected');
-    } else if (scannerState) {
-      scannerState.textContent = t('scannerIdle');
-    }
-  }
-
-  /* ========================================================================
-     3. Theme (uses inline SVG icons, no Font Awesome)
-     The data-theme attribute is set on the <html> element so the [data-theme="dark"]
-     CSS selector cascades to body and all descendants. Setting it on a nested
-     #app element would leave body using the wrong theme variables.
-     ======================================================================== */
-  const themeToggle = document.getElementById('themeToggle');
-  let dark = false;
-  const THEME_STORAGE_KEY = 'webdrop-theme';
-
-  function applyThemeToDOM(darkMode) {
-    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
-  }
-
-  function setTheme(darkMode) {
-    dark = darkMode;
-    applyThemeToDOM(dark);
-    if (themeToggle) themeToggle.innerHTML = dark ? ICONS.sun : ICONS.moon;
-    themeToggle.setAttribute('aria-pressed', String(dark));
-    themeToggle.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
-    try { localStorage.setItem(THEME_STORAGE_KEY, dark ? 'dark' : 'light'); } catch (_) {}
-  }
-
-  // Apply theme as early as possible to avoid flash of wrong theme
-  (function initTheme() {
-    let saved = null;
-    try { saved = localStorage.getItem(THEME_STORAGE_KEY); } catch (_) {}
-    if (saved === 'dark') setTheme(true);
-    else if (saved === 'light') setTheme(false);
-    else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme(true);
-    else setTheme(true); // default to dark utilitarian aesthetic
-  })();
-
-  // Listen to system theme changes only when the user has not set a preference
-  if (window.matchMedia) {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const onChange = (e) => {
-      let saved = null;
-      try { saved = localStorage.getItem(THEME_STORAGE_KEY); } catch (_) {}
-      if (saved !== 'dark' && saved !== 'light') setTheme(e.matches);
-    };
-    if (mq.addEventListener) mq.addEventListener('change', onChange);
-    else if (mq.addListener) mq.addListener(onChange);
-  }
-
-  themeToggle.addEventListener('click', () => setTheme(!dark));
-
-  /* ========================================================================
-     4. Footer year, device name, avatar
-     ======================================================================== */
-  document.getElementById('footerYear').textContent = new Date().getFullYear();
-
-  const deviceNameInput = document.getElementById('deviceNameInput');
-  const avatarDisplay = document.getElementById('avatarDisplay');
-
-  function updateAvatar() {
-    const name = (deviceNameInput.value || 'Device').trim();
-    const initials = name.split(/\s+/).map(w => w[0] || '').join('').toUpperCase().slice(0, 2);
-    avatarDisplay.textContent = initials || 'DV';
-  }
-  deviceNameInput.addEventListener('input', updateAvatar);
-
-  (function loadDeviceName() {
-    let saved = null;
-    try { saved = localStorage.getItem('webdrop-deviceName'); } catch (_) {}
-    if (saved) {
-      deviceNameInput.value = saved;
-      updateAvatar();
-    }
-  })();
-  deviceNameInput.addEventListener('change', function () {
-    try { localStorage.setItem('webdrop-deviceName', this.value.trim() || 'My Device'); } catch (_) {}
-    updateAvatar();
+function initTheme() {
+  let saved = null;
+  try { saved = localStorage.getItem(THEME_KEY); } catch (_) {}
+  let dark;
+  if (saved === 'dark') dark = true;
+  else if (saved === 'light') dark = false;
+  else dark = true; // default to dark utilitarian
+  applyTheme(dark);
+  dom.themeToggle?.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') === 'dark';
+    const next = !current;
+    applyTheme(next);
+    try { localStorage.setItem(THEME_KEY, next ? 'dark' : 'light'); } catch (_) {}
   });
+}
 
-  document.getElementById('langSelect').addEventListener('change', function () {
-    currentLang = this.value;
-    updateUI();
+// ============================================================================
+// Device name + avatar
+// ============================================================================
+const DEVICE_KEY = 'webdrop-deviceName';
+
+function initDeviceName() {
+  let saved = null;
+  try { saved = localStorage.getItem(DEVICE_KEY); } catch (_) {}
+  if (saved) dom.deviceNameInput.value = saved;
+  updateAvatar();
+  dom.deviceNameInput.addEventListener('input', updateAvatar);
+  dom.deviceNameInput.addEventListener('change', () => {
+    try { localStorage.setItem(DEVICE_KEY, dom.deviceNameInput.value.trim() || 'My Device'); } catch (_) {}
   });
+}
 
-  /* ========================================================================
-     5. Cookie consent
-     ======================================================================== */
-  const cookieConsent = document.getElementById('cookieConsent');
-  const acceptCookiesBtn = document.getElementById('acceptCookiesBtn');
+function updateAvatar() {
+  const name = (dom.deviceNameInput.value || 'Device').trim();
+  const initials = name.split(/\s+/).map(w => w[0] || '').join('').toUpperCase().slice(0, 2);
+  dom.avatarDisplay.textContent = initials || 'DV';
+}
+
+// ============================================================================
+// Cookie consent
+// ============================================================================
+function initCookieConsent() {
   try {
     if (localStorage.getItem('cookiesAccepted') === 'true') {
-      cookieConsent.classList.add('hidden');
+      dom.cookieConsent.classList.add('hidden');
     }
   } catch (_) {}
-  acceptCookiesBtn.addEventListener('click', function () {
+  dom.acceptCookiesBtn.addEventListener('click', () => {
     try { localStorage.setItem('cookiesAccepted', 'true'); } catch (_) {}
-    cookieConsent.classList.add('hidden');
+    dom.cookieConsent.classList.add('hidden');
   });
+}
 
-  /* ========================================================================
-     6. DOM references
-     ======================================================================== */
-  const myIdDisplay     = document.getElementById('myIdDisplay');
-  const copyIdBtn       = document.getElementById('copyIdBtn');
-  const targetIdInput   = document.getElementById('targetId');
-  const connectBtn      = document.getElementById('connectBtn');
-  const disconnectBtn   = document.getElementById('disconnectBtn');
-  const statusText      = document.getElementById('statusText');
-  const setupArea       = document.getElementById('setupArea');
-  const transferArea    = document.getElementById('transferArea');
-  const peerIdDisplay   = document.getElementById('peerIdDisplay');
-  const chatBox         = document.getElementById('chatBox');
-  const msgInput        = document.getElementById('msgInput');
-  const sendBtn         = document.getElementById('sendBtn');
-  const fileInput       = document.getElementById('fileInput');
-  const imageInput      = document.getElementById('imageInput');
-  const videoInput      = document.getElementById('videoInput');
-  const folderInput     = document.getElementById('folderInput');
-  const refreshBtn      = document.getElementById('refreshBtn');
-  const logoRefreshBtn  = document.getElementById('logoRefreshBtn');
-  const scannerRing     = document.getElementById('scannerRing');
-  const scannerState    = document.getElementById('scannerState');
-  const dropZone        = document.getElementById('dropZone');
-  const dropChooseFiles = document.getElementById('dropChooseFiles');
-  const dropChooseFolder= document.getElementById('dropChooseFolder');
-  const dropFileInput   = document.getElementById('dropFileInput');
-  const dropFolderInput = document.getElementById('dropFolderInput');
-
-  let pendingAttachments = [];
-  const PASTE_CHAR_THRESHOLD = 300;
-  let peer = null;
-  let conn = null;
-  let myId = '';
-  let isRefreshing = false;
-  let peerRetryCount = 0;  // caps unavailable-id retry loop
-
-  /* ========================================================================
-     7. Helpers
-     ======================================================================== */
-  function escapeHtml(value) {
-    return String(value).replace(/[&<>'"]/g, ch => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[ch]));
-  }
-
-  function addMessage(sender, text, type) {
-    const div = document.createElement('div');
-    div.className = 'message ' + type;
-    if (type === 'system') {
-      div.textContent = text;
-    } else {
-      const header = document.createElement('div');
-      header.className = 'message-header';
-      const nameSpan = document.createElement('span');
-      nameSpan.className = 'message-sender';
-      nameSpan.textContent = sender + ':';
-      header.appendChild(nameSpan);
-
-      if (type === 'received') {
-        const copyBtn = document.createElement('button');
-        copyBtn.className = 'copy-msg-btn';
-        copyBtn.type = 'button';
-        copyBtn.innerHTML = ICONS.copy;
-        copyBtn.title = 'Copy text';
-        copyBtn.setAttribute('aria-label', 'Copy message text');
-        copyBtn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          const textToCopy = text;
-          const doCopy = function () {
-            copyBtn.innerHTML = ICONS.check;
-            copyBtn.classList.add('copied');
-            setTimeout(() => {
-              copyBtn.innerHTML = ICONS.copy;
-              copyBtn.classList.remove('copied');
-            }, 1500);
-          };
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(textToCopy).then(doCopy).catch(fallbackCopy);
-          } else {
-            fallbackCopy();
-          }
-          function fallbackCopy() {
-            const ta = document.createElement('textarea');
-            ta.value = textToCopy;
-            document.body.appendChild(ta);
-            ta.select();
-            try { document.execCommand('copy'); } catch (_) {}
-            ta.remove();
-            doCopy();
-          }
-        });
-        header.appendChild(copyBtn);
-      }
-      div.appendChild(header);
-
-      const content = document.createElement('div');
-      content.className = 'message-content';
-      content.textContent = text;
-      div.appendChild(content);
+// ============================================================================
+// Load TURN credentials from the backend (served via Cloudflare Function)
+// ============================================================================
+async function loadIceServers() {
+  try {
+    const res = await fetch('/api/turn-credentials');
+    const data = await res.json();
+    if (data.ok && data.iceServers) {
+      state.iceServers = data.iceServers;
     }
-    chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
+  } catch (e) {
+    console.warn('TURN credentials fetch failed, using STUN only:', e.message);
+    state.iceServers = [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' }
+    ];
   }
+}
 
-  function systemMessage(key, vars) {
-    addMessage('System', t(key, vars), 'system');
+// ============================================================================
+// Helpers
+// ============================================================================
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+  return (bytes / 1073741824).toFixed(1) + ' GB';
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>'"]/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function setScannerState(stateKey) {
+  if (dom.scannerState) dom.scannerState.textContent = STATUS_TEXT[stateKey] || stateKey;
+}
+
+function setConnectionType(type) {
+  const text = CONNECTION_TYPE_TEXT[type] || CONNECTION_TYPE_TEXT.unknown;
+  if (dom.connectionType) {
+    dom.connectionType.textContent = text;
+    dom.connectionType.dataset.type = type;
   }
-
-  function resetUI() {
-    conn = null;
-    setupArea.style.display = 'block';
-    transferArea.classList.remove('active');
-    targetIdInput.value = '';
-    statusText.textContent = t('ready');
-    statusText.dataset.custom = 'false';
-    statusText.style.color = '';
-    chatBox.innerHTML = '';
-    pendingAttachments = [];
-    renderPendingAttachments();
-    updateScannerState('idle');
-    clearPeerBlip();
+  if (dom.connectionTypeTransfer) {
+    dom.connectionTypeTransfer.textContent = text;
+    dom.connectionTypeTransfer.dataset.type = type;
   }
+}
 
-  function showTransferUI(peerId) {
-    setupArea.style.display = 'none';
-    transferArea.classList.add('active');
-    peerIdDisplay.textContent = peerId;
-    chatBox.innerHTML = '';
-    updateScannerState('connected');
-    showPeerBlip();
-  }
-
-  function formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-    return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
-  }
-
-  function renderPendingAttachments() {
-    const container = document.getElementById('pendingAttachments');
-    container.innerHTML = '';
-    pendingAttachments.forEach((file, index) => {
-      const badge = document.createElement('div');
-      badge.className = 'pending-attachment';
-      const iconSpan = document.createElement('span');
-      iconSpan.innerHTML = ICONS.file;
-      badge.appendChild(iconSpan);
-      const info = document.createElement('div');
-      info.className = 'pending-attachment-info';
-      const nameEl = document.createElement('div');
-      nameEl.className = 'pending-attachment-name';
-      nameEl.textContent = file.name;
-      nameEl.title = file.name;
-      info.appendChild(nameEl);
-      const sizeEl = document.createElement('div');
-      sizeEl.className = 'pending-attachment-size';
-      sizeEl.textContent = formatFileSize(file.size);
-      info.appendChild(sizeEl);
-      badge.appendChild(info);
-      const removeBtn = document.createElement('button');
-      removeBtn.className = 'pending-attachment-remove';
-      removeBtn.type = 'button';
-      removeBtn.title = t('removeAttachment');
-      removeBtn.setAttribute('aria-label', t('removeAttachment'));
-      removeBtn.innerHTML = ICONS.times;
-      removeBtn.addEventListener('click', function () {
-        pendingAttachments.splice(index, 1);
-        renderPendingAttachments();
+// ============================================================================
+// Chat message helpers
+// ============================================================================
+function addMessage(sender, text, type) {
+  const div = document.createElement('div');
+  div.className = 'message ' + type;
+  if (type === 'system') {
+    div.textContent = text;
+  } else {
+    const header = document.createElement('div');
+    header.className = 'message-header';
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'message-sender';
+    nameSpan.textContent = sender + ':';
+    header.appendChild(nameSpan);
+    if (type === 'received') {
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'copy-msg-btn';
+      copyBtn.type = 'button';
+      copyBtn.innerHTML = ICONS.copy;
+      copyBtn.setAttribute('aria-label', 'Copy message text');
+      copyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const doCopy = () => {
+          copyBtn.innerHTML = ICONS.check;
+          copyBtn.classList.add('copied');
+          setTimeout(() => {
+            copyBtn.innerHTML = ICONS.copy;
+            copyBtn.classList.remove('copied');
+          }, 1500);
+        };
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(text).then(doCopy).catch(doCopy);
+        } else {
+          doCopy();
+        }
       });
-      badge.appendChild(removeBtn);
-      container.appendChild(badge);
+      header.appendChild(copyBtn);
+    }
+    div.appendChild(header);
+    const content = document.createElement('div');
+    content.className = 'message-content';
+    content.textContent = text;
+    div.appendChild(content);
+  }
+  dom.chatBox.appendChild(div);
+  dom.chatBox.scrollTop = dom.chatBox.scrollHeight;
+}
+
+function systemMessage(text) {
+  addMessage('System', text, 'system');
+}
+
+// ============================================================================
+// Transfer UI show/hide
+// ============================================================================
+function showTransferUI() {
+  dom.setupArea.style.display = 'none';
+  dom.transferArea.classList.add('active');
+  dom.chatBox.innerHTML = '';
+  setScannerState('connected');
+}
+
+function resetUI() {
+  if (state.connection) {
+    try { state.connection.close(); } catch (_) {}
+    state.connection = null;
+  }
+  if (state.signaling) {
+    state.signaling.stopPolling();
+    state.signaling = null;
+  }
+  state.role = null;
+  state.sessionCode = null;
+  dom.setupArea.style.display = 'block';
+  dom.transferArea.classList.remove('active');
+  dom.chatBox.innerHTML = '';
+  setScannerState('idle');
+  setConnectionType('unknown');
+}
+
+// ============================================================================
+// WebRTC connection setup
+// ============================================================================
+function setupConnection(remotePeerId) {
+  const conn = new WebDropConnection(state.peerId, state.iceServers);
+  conn.remotePeerId = remotePeerId;
+
+  conn.onIceCandidate = (candidate) => {
+    // Send each ICE candidate to the remote peer via signaling.
+    state.signaling.writeMessage(remotePeerId, 'ice', JSON.stringify(candidate.toJSON()));
+  };
+
+  conn.onStateChange = (webrtcState) => {
+    if (webrtcState === 'connected' || webrtcState === 'completed') {
+      setScannerState('connected');
+    } else if (webrtcState === 'failed') {
+      setScannerState('failed');
+      systemMessage('Connection failed. Try refreshing.');
+    } else if (webrtcState === 'disconnected') {
+      setScannerState('disconnected');
+      systemMessage('Connection closed.');
+    }
+  };
+
+  conn.onConnectionType = (type) => {
+    setConnectionType(type);
+  };
+
+  conn.onFileReceived = (info, blob) => {
+    showReceivedFile(info, blob);
+  };
+
+  conn.onTextReceived = (text) => {
+    addMessage('Peer', text, 'received');
+  };
+
+  conn.onTransferProgress = (transferId, sent, total) => {
+    // Update progress UI if visible.
+    if (dom.transferProgress && state.transferInProgress) {
+      const pct = total > 0 ? Math.round((sent / total) * 100) : 0;
+      dom.transferProgress.style.width = pct + '%';
+      dom.transferProgressText.textContent = formatFileSize(sent) + ' / ' + formatFileSize(total);
+    }
+  };
+
+  conn.onDataChannelOpen = () => {
+    setScannerState('connected');
+  };
+
+  state.connection = conn;
+  return conn;
+}
+
+// ============================================================================
+// Sender flow: create session + show QR
+// ============================================================================
+async function startSenderSession() {
+  state.peerId = state.peerId || generatePeerId();
+  state.sessionCode = generateSessionCode();
+  state.role = 'sender';
+
+  setScannerState('scanning');
+
+  // Create session in Neon.
+  try {
+    const res = await fetch('/api/session/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_code: state.sessionCode,
+        creator_peer_id: state.peerId
+      })
     });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to create session');
+    }
+  } catch (e) {
+    setScannerState('backendUnavailable');
+    systemMessage('Backend unavailable: ' + e.message);
+    return;
   }
 
-  /* Paste handling: do NOT auto-convert large pastes to .txt anymore.
-     The user now chooses between Send (text) and Send as TXT using the two
-     buttons in the chat-input row. We still surface a hint when a paste is
-     large so the user knows the TXT option exists. */
-  msgInput.addEventListener('paste', function (e) {
-    const clipboardData = e.clipboardData || window.clipboardData;
-    if (!clipboardData) return;
-    const pastedText = clipboardData.getData('text');
-    if (!pastedText) return;
-    if (pastedText.length > PASTE_CHAR_THRESHOLD) {
-      // Do not preventDefault; let the paste land in the input so the user
-      // can review it. Show a hint pointing at the TXT button.
-      systemMessage('pastedTextAttached', { name: 'shared-text.txt' });
-    }
-  });
-
-  /* ========================================================================
-     8. Scanner - honest state only, no fake peer counts
-     ======================================================================== */
-  function updateScannerState(state) {
-    if (!scannerState) return;
-    if (state === 'connected') {
-      scannerState.textContent = t('scannerConnected');
-    } else if (state === 'scanning') {
-      scannerState.textContent = t('scannerScanning');
-    } else {
-      scannerState.textContent = t('scannerIdle');
-    }
-  }
-
-  function showPeerBlip() {
-    if (!scannerRing) return;
-    let blip = scannerRing.querySelector('.scanner-peer');
-    if (!blip) {
-      blip = document.createElement('span');
-      blip.className = 'scanner-peer';
-      blip.setAttribute('aria-hidden', 'true');
-      blip.style.left = '50%';
-      blip.style.top = '50%';
-      scannerRing.appendChild(blip);
-    }
-  }
-
-  function clearPeerBlip() {
-    if (!scannerRing) return;
-    scannerRing.querySelectorAll('.scanner-peer').forEach(el => el.remove());
-  }
-
-  /* ========================================================================
-     9. Refresh connection (logo button + standalone refresh button)
-     ======================================================================== */
-  function refreshConnection() {
-    if (isRefreshing) return;
-    isRefreshing = true;
-
-    // Spinning feedback on both the logo button and the standalone refresh button
-    if (logoRefreshBtn) {
-      logoRefreshBtn.classList.add('spinning');
-      logoRefreshBtn.disabled = true;
-    }
-    if (refreshBtn) {
-      refreshBtn.disabled = true;
-      refreshBtn.classList.add('spinning');
-    }
-    updateScannerState('scanning');
-
-    if (conn) {
-      try { conn.close(); } catch (_) {}
-      conn = null;
-    }
-    if (peer) {
-      try { peer.destroy(); } catch (_) {}
-      peer = null;
-    }
+  // Set up signaling client + start polling.
+  state.signaling = new SignalingClient(state.peerId, state.sessionCode);
+  state.signaling.onMessage = handleSignalingMessage;
+  state.signaling.onSessionError = (reason) => {
+    systemMessage('Session error: ' + reason);
     resetUI();
+  };
+  state.signaling.startPolling();
 
-    setTimeout(() => {
-      initPeer();
-      updateScannerState('idle');
-      setTimeout(() => {
-        if (logoRefreshBtn) {
-          logoRefreshBtn.classList.remove('spinning');
-          logoRefreshBtn.disabled = false;
-        }
-        if (refreshBtn) {
-          refreshBtn.classList.remove('spinning');
-          refreshBtn.disabled = false;
-        }
-        isRefreshing = false;
-      }, 400);
-    }, 350);
+  // Show QR modal.
+  showQRModal();
+}
+
+// ============================================================================
+// Receiver flow: join session via code
+// ============================================================================
+async function joinSession(sessionCode) {
+  const code = cleanSessionCode(sessionCode);
+  if (code.length !== 12) {
+    systemMessage('Invalid session code. Must be 12 characters.');
+    return;
   }
 
-  if (refreshBtn) refreshBtn.addEventListener('click', refreshConnection);
-  if (logoRefreshBtn) logoRefreshBtn.addEventListener('click', refreshConnection);
+  state.peerId = state.peerId || generatePeerId();
+  state.sessionCode = code;
+  state.role = 'receiver';
+  setScannerState('scanning');
 
-  /* ========================================================================
-     10. PeerJS init
-     ======================================================================== */
-  function initPeer() {
-    myId = Math.floor(1000 + Math.random() * 9000).toString();
-    myIdDisplay.textContent = myId;
-
-    peer = new Peer(myId, {
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ]
-      }
+  // Join the session in Neon.
+  try {
+    const res = await fetch('/api/session/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_code: code,
+        joiner_peer_id: state.peerId
+      })
     });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to join session');
+    }
+    // We now know the creator's peer_id.
+    const creatorPeerId = data.creator_peer_id;
 
-    peer.on('open', (id) => {
-      console.log('Peer open with ID:', id);
-      // BUG FIX (audit): reset retry counter on successful open, and clear
-      // any leftover error colour from a previous failed attempt.
-      peerRetryCount = 0;
-      statusText.textContent = t('ready');
-      statusText.style.color = '';
-      statusText.dataset.custom = 'false';
-    });
+    // Set up signaling + connection.
+    state.signaling = new SignalingClient(state.peerId, code);
+    state.signaling.onMessage = handleSignalingMessage;
+    state.signaling.onSessionError = (reason) => {
+      systemMessage('Session error: ' + reason);
+      resetUI();
+    };
+    state.signaling.startPolling();
 
-    peer.on('connection', (incoming) => {
-      console.log('Incoming connection from:', incoming.peer);
-      if (conn) {
-        console.warn('Already have a connection, rejecting incoming.');
-        incoming.close();
-        return;
-      }
-      conn = incoming;
-      conn.on('open', () => {
-        console.log('Incoming connection opened from', conn.peer);
-        showTransferUI(conn.peer);
-        systemMessage('systemConnected');
-        closeQRModal();
-      });
-      conn.on('data', (data) => handleIncomingData(data));
-      conn.on('close', () => {
-        // BUG FIX (audit): clear any in-progress incoming transfers so the
-        // Map does not leak transfer state across reconnects.
-        incomingTransfers.clear();
-        systemMessage('systemClosed');
-        resetUI();
-      });
-      conn.on('error', (err) => {
-        console.error('conn error:', err);
-        statusText.textContent = t('failed');
-        statusText.style.color = 'var(--danger)';
-      });
-    });
+    // Create the WebRTC connection + offer.
+    const conn = setupConnection(creatorPeerId);
+    const offer = await conn.createOffer();
 
-    peer.on('error', (err) => {
-      console.error('peer error:', err);
-      if (err.type === 'unavailable-id') {
-        // BUG FIX (audit): previously this branch recursed indefinitely if
-        // PeerJS kept returning unavailable-id. Cap retries.
-        peerRetryCount = (peerRetryCount || 0) + 1;
-        if (peerRetryCount > 5) {
-          console.error('PeerJS unavailable-id retried 5 times; giving up.');
-          statusText.textContent = t('failed');
-          statusText.style.color = 'var(--danger)';
-          peerRetryCount = 0;
-          return;
-        }
-        myId = Math.floor(1000 + Math.random() * 9000).toString();
-        myIdDisplay.textContent = myId;
-        try { peer.destroy(); } catch (_) {}
-        initPeer();
-      } else {
-        statusText.textContent = t('failed');
-        statusText.style.color = 'var(--danger)';
-      }
-    });
+    // Send the offer to the creator via signaling.
+    await state.signaling.writeMessage(creatorPeerId, 'offer', JSON.stringify(offer));
+
+    showTransferUI();
+    systemMessage('Connecting to sender...');
+  } catch (e) {
+    setScannerState('failed');
+    systemMessage('Join failed: ' + e.message);
+  }
+}
+
+// ============================================================================
+// Handle incoming signaling messages
+// ============================================================================
+async function handleSignalingMessage(msg) {
+  if (!state.connection) {
+    // First message from the receiver is the offer (sender side).
+    if (msg.message_type === 'offer') {
+      const creatorPeerId = state.sessionCode ? state.peerId : null;
+      const remotePeerId = msg.from_peer_id;
+      const conn = setupConnection(remotePeerId);
+      const offer = JSON.parse(msg.payload);
+      const answer = await conn.acceptOffer(offer.sdp || offer);
+      await state.signaling.writeMessage(remotePeerId, 'answer', JSON.stringify(answer));
+      showTransferUI();
+      systemMessage('Receiver connected. Establishing P2P link...');
+    }
+    return;
   }
 
-  /* ========================================================================
-     11. connectToPeer
-     ======================================================================== */
-  async function connectToPeer(targetId) {
-    console.log('connectToPeer called with:', targetId);
-
-    if (!targetId || !targetId.trim()) {
-      console.warn('connectToPeer: invalid targetId');
-      statusText.textContent = t('failed');
-      statusText.style.color = 'var(--danger)';
-      return;
-    }
-
-    targetId = targetId.trim();
-    updateScannerState('scanning');
-
-    if (!peer || !peer.id) {
-      console.log('Local peer not ready. Waiting...');
-      let waited = 0;
-      while ((!peer || !peer.id) && waited < 5000) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-        waited += 200;
-      }
-      if (!peer || !peer.id) {
-        console.error('PeerJS not ready after waiting');
-        statusText.textContent = t('failed');
-        statusText.style.color = 'var(--danger)';
-        updateScannerState('idle');
-        return;
-      }
-    }
-
+  // Connection exists - handle answer or ICE candidates.
+  if (msg.message_type === 'answer') {
     try {
-      if (conn && conn.open && conn.peer === targetId) {
-        console.log('Already connected to', targetId);
-        showTransferUI(conn.peer);
-        statusText.textContent = t('connected');
-        return;
-      }
+      const answer = JSON.parse(msg.payload);
+      await state.connection.acceptAnswer(answer.sdp || answer);
     } catch (e) {
-      console.warn('Error checking existing conn:', e);
+      console.error('Failed to apply answer:', e);
     }
-
-    if (conn) {
-      try { conn.close(); } catch (e) { /* ignore */ }
-      conn = null;
-    }
-
-    statusText.innerHTML = '<span class="loading"></span> ' + t('connecting');
-    statusText.dataset.custom = 'true';
-    statusText.style.color = '';
-
+    return;
+  }
+  if (msg.message_type === 'ice') {
     try {
-      const newConn = peer.connect(targetId, { reliable: true });
-      conn = newConn;
-
-      newConn.on('open', () => {
-        console.log('PeerJS connection opened:', conn.peer);
-        showTransferUI(conn.peer);
-        systemMessage('systemConnected');
-        statusText.textContent = t('connected');
-        statusText.dataset.custom = 'false';
-        // BUG FIX (audit): clear any leftover danger colour from a prior
-        // failed attempt so the success state shows correctly.
-        statusText.style.color = '';
-      });
-
-      newConn.on('data', (data) => handleIncomingData(data));
-
-      newConn.on('close', () => {
-        console.log('Connection closed with', targetId);
-        // BUG FIX (audit): clear in-progress incoming transfers on disconnect.
-        incomingTransfers.clear();
-        systemMessage('systemClosed');
-        resetUI();
-      });
-
-      newConn.on('error', (err) => {
-        console.error('PeerJS connection error:', err);
-        statusText.textContent = t('failed');
-        statusText.style.color = 'var(--danger)';
-        conn = null;
-        updateScannerState('idle');
-      });
-
-    } catch (err) {
-      console.error('connectToPeer threw:', err);
-      statusText.textContent = t('failed');
-      statusText.style.color = 'var(--danger)';
-      conn = null;
-      updateScannerState('idle');
+      const candidate = JSON.parse(msg.payload);
+      await state.connection.addIceCandidate(candidate);
+    } catch (e) {
+      console.error('Failed to add ICE candidate:', e);
     }
+    return;
   }
+}
 
-  /* ========================================================================
-     12. File transfer (chunked)
-     ======================================================================== */
-  const incomingTransfers = new Map();
+// ============================================================================
+// QR modal (generation + scanning)
+// ============================================================================
+function showQRModal() {
+  const baseUrl = window.location.origin;
+  const payload = buildQRPayload(state.sessionCode, baseUrl);
+  generateQR(payload, dom.qrCodeContainer);
+  dom.qrStatus.textContent = 'Waiting for receiver to scan...';
+  dom.qrModalOverlay.classList.add('open');
 
-  function waitForConnectionOpen(connection, timeout = 15000) {
-    return new Promise((resolve, reject) => {
-      if (!connection) return reject(new Error('No active connection.'));
-      if (connection.open) return resolve();
-      let settled = false;
-      const finish = (fn, value) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        fn(value);
-      };
-      const onOpen = () => finish(resolve);
-      const onError = (err) => finish(reject, err || new Error('Connection error.'));
-      const onClose = () => finish(reject, new Error('Connection closed before transfer.'));
-      const timer = setTimeout(() => finish(reject, new Error('Connection timeout.')), timeout);
-      connection.on('open', onOpen);
-      connection.on('error', onError);
-      connection.on('close', onClose);
-    });
+  // Display the human-readable code for manual entry.
+  if (dom.qrSessionCode) {
+    dom.qrSessionCode.textContent = formatSessionCode(state.sessionCode);
   }
+}
 
-  function handleIncomingData(data) {
-    if (!data) return;
-    if (data.type === 'text') {
-      addMessage('Peer', data.payload, 'received');
-      return;
-    }
-    if (data.type === 'file-start') {
-      incomingTransfers.set(data.transferId, {
-        filename: data.filename || 'file',
-        filetype: data.filetype || 'application/octet-stream',
-        filesize: data.filesize || 0,
-        totalChunks: data.totalChunks || 0,
-        chunks: new Array(data.totalChunks || 0),
-        receivedChunks: 0,
-        metadata: data.metadata || {}
-      });
-      return;
-    }
-    if (data.type === 'file-chunk') {
-      receiveFileChunk(data);
-      return;
-    }
-    if (data.type === 'file' || data.type === 'file-complete') {
-      receiveFile(data);
-      return;
-    }
+function closeQRModal() {
+  dom.qrModalOverlay.classList.remove('open');
+}
+
+function initQRModal() {
+  dom.qrModalClose?.addEventListener('click', closeQRModal);
+  dom.qrModalOverlay?.addEventListener('click', (e) => {
+    if (e.target === dom.qrModalOverlay) closeQRModal();
+  });
+}
+
+// ============================================================================
+// QR Scanner modal
+// ============================================================================
+let qrScanner = null;
+
+async function openScanner() {
+  dom.scannerModalOverlay.classList.add('open');
+  if (!qrScanner) {
+    qrScanner = new QRScanner('qrScannerVideo');
   }
-
-  function receiveFileChunk(data) {
-    const transfer = incomingTransfers.get(data.transferId);
-    if (!transfer) return;
-    if (!transfer.chunks[data.chunkIndex]) {
-      transfer.chunks[data.chunkIndex] = data.payload;
-      transfer.receivedChunks += 1;
-    }
-    if (transfer.receivedChunks >= transfer.totalChunks) {
-      const parts = transfer.chunks.map(part =>
-        part instanceof ArrayBuffer ? part : new Uint8Array(part).buffer
-      );
-      const blob = new Blob(parts, { type: transfer.filetype });
-      incomingTransfers.delete(data.transferId);
-      showReceivedBlob(blob, transfer.filename, transfer.filetype, transfer.filesize);
-    }
-  }
-
-  function receiveFile(data) {
-    const payload = data.payload;
-    if (payload instanceof ArrayBuffer) {
-      const blob = new Blob([payload], { type: data.filetype || 'application/octet-stream' });
-      showReceivedBlob(blob, data.filename || 'file', data.filetype, data.filesize);
-      return;
-    }
-    if (typeof payload !== 'string') return;
-    if (payload.startsWith('data:')) {
-      fetch(payload)
-        .then(res => res.blob())
-        .then(blob => showReceivedBlob(blob, data.filename || 'file', data.filetype, data.filesize))
-        .catch(err => {
-          console.error('Failed to decode file:', err);
-          systemMessage('systemError', { name: data.filename || 'file' });
-        });
-    }
-  }
-
-  function showReceivedBlob(blob, filename, filetype, filesize) {
-    const url = URL.createObjectURL(blob);
-    const mimeType = blob.type || filetype || 'application/octet-stream';
-    const msgDiv = document.createElement('div');
-    msgDiv.className = 'message received';
-
-    const info = document.createElement('div');
-    info.innerHTML = '<strong>' + ICONS.paperclip + ' ' + escapeHtml(filename) + '</strong>';
-    if (filesize) {
-      const size = formatFileSize(filesize);
-      info.innerHTML += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">' + size + '</div>';
-    }
-    msgDiv.appendChild(info);
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.className = 'btn btn-success';
-    link.style.cssText = 'margin-top:8px;padding:6px 12px;font-size:0.8rem;display:inline-flex;align-items:center;gap:6px;';
-    link.innerHTML = ICONS.download + ' ' + escapeHtml(t('fileDownload'));
-    msgDiv.appendChild(link);
-
-    if (mimeType.startsWith('image/')) {
-      const img = document.createElement('img');
-      img.src = url;
-      img.className = 'file-preview';
-      img.style.maxHeight = '160px';
-      msgDiv.appendChild(img);
-    } else if (mimeType.startsWith('video/')) {
-      const vid = document.createElement('video');
-      vid.src = url;
-      vid.controls = true;
-      vid.className = 'file-preview';
-      vid.style.maxHeight = '160px';
-      msgDiv.appendChild(vid);
-    }
-    chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
-
-    // BUG FIX (audit): Blob URL memory leak. Previously every received file
-    // created an object URL that was never revoked, leaking memory for the
-    // lifetime of the page. Revoke after 5 minutes; download/save already
-    // snapshots the blob, and the in-DOM preview stays valid for the visible
-    // lifetime of the message.
-    setTimeout(function () {
-      try { URL.revokeObjectURL(url); } catch (_) {}
-    }, 5 * 60 * 1000);
-  }
-
-  async function sendFile(file, metadata) {
-    if (!conn) {
-      systemMessage('systemError', { name: file.name });
-      return;
-    }
-    try {
-      await waitForConnectionOpen(conn);
-      const CHUNK_SIZE = 48 * 1024;
-      const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
-      const transferId = generateUUID();
-      const sendName = (metadata && (metadata.relativePath || metadata.filename)) || file.name;
-
-      conn.send({
-        type: 'file-start',
-        transferId,
-        filename: sendName,
-        filetype: file.type || 'application/octet-stream',
-        filesize: file.size,
-        totalChunks,
-        metadata: metadata || {}
-      });
-
-      for (let index = 0; index < totalChunks; index++) {
-        const start = index * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, file.size);
-        const buffer = await file.slice(start, end).arrayBuffer();
-        conn.send({
-          type: 'file-chunk',
-          transferId,
-          chunkIndex: index,
-          totalChunks,
-          payload: buffer
-        });
-        if (index % 8 === 0) {
-          await new Promise(resolve => setTimeout(resolve, 8));
-        }
+  await qrScanner.start(
+    (decodedText) => {
+      const parsed = parseQRPayload(decodedText);
+      if (!parsed) {
+        dom.qrScanError.textContent = 'Invalid QR code.';
+        return;
       }
-
-      conn.send({ type: 'file-complete', transferId });
-      systemMessage('systemSent', { name: sendName });
-    } catch (err) {
-      console.error('File transfer error:', err);
-      systemMessage('systemError', { name: file.name });
+      qrScanner.stop();
+      dom.scannerModalOverlay.classList.remove('open');
+      joinSession(parsed.code);
+    },
+    (err) => {
+      dom.qrScanError.innerHTML = '<strong>Camera could not be opened.</strong><br>' +
+        escapeHtml(err.message || '') + '<br><br>Make sure HTTPS is enabled and camera permission granted.';
     }
-  }
+  );
+}
 
-  function handleFiles(files, label) {
-    if (!conn || !files || !files.length) return;
-    const list = Array.from(files);
-    if (list.length > 1) {
-      showZipChoice(list);
-      return;
-    }
-    systemMessage('systemSending', { name: list[0].name });
-    sendFile(list[0], { label: label || 'file' });
-  }
+function closeScanner() {
+  if (qrScanner) qrScanner.stop();
+  dom.scannerModalOverlay.classList.remove('open');
+}
 
-  fileInput.addEventListener('change', function (e) {
-    handleFiles(e.target.files, 'document');
-    this.value = '';
-  });
-  imageInput.addEventListener('change', function (e) {
-    handleFiles(e.target.files, 'image');
-    this.value = '';
-  });
-  videoInput.addEventListener('change', function (e) {
-    handleFiles(e.target.files, 'video');
-    this.value = '';
-  });
-  folderInput.addEventListener('change', function (e) {
-    const files = Array.from(e.target.files || []);
-    if (!files.length || !conn) return;
-    if (files.length > 1) {
-      showZipChoice(files);
+// ============================================================================
+// Manual code entry
+// ============================================================================
+function initManualEntry() {
+  dom.manualJoinBtn?.addEventListener('click', () => {
+    const code = dom.manualCodeInput.value;
+    if (cleanSessionCode(code).length === 12) {
+      joinSession(code);
     } else {
-      const file = files[0];
-      systemMessage('systemSending', { name: file.name });
-      sendFile(file, { folder: true, relativePath: file.webkitRelativePath || file.name });
+      systemMessage('Enter a valid 12-character code.');
     }
-    this.value = '';
   });
+}
 
-  // Drop zone alternate triggers
-  if (dropChooseFiles) {
-    dropChooseFiles.addEventListener('click', () => dropFileInput && dropFileInput.click());
-  }
-  if (dropChooseFolder) {
-    dropChooseFolder.addEventListener('click', () => dropFolderInput && dropFolderInput.click());
-  }
-  if (dropFileInput) {
-    dropFileInput.addEventListener('change', function (e) {
-      handleFiles(e.target.files, 'document');
-      this.value = '';
-    });
-  }
-  if (dropFolderInput) {
-    dropFolderInput.addEventListener('change', function (e) {
-      const files = Array.from(e.target.files || []);
-      if (!files.length || !conn) return;
-      if (files.length > 1) {
-        showZipChoice(files);
-      } else {
-        const file = files[0];
-        systemMessage('systemSending', { name: file.name });
-        sendFile(file, { folder: true, relativePath: file.webkitRelativePath || file.name });
-      }
-      this.value = '';
-    });
-  }
+// ============================================================================
+// File sending (drag-drop, file tray, ZIP choice, TXT send)
+// ============================================================================
+function initFileHandling() {
+  // File tray click-to-select.
+  dom.fileInput?.addEventListener('change', (e) => handleFiles(e.target.files));
+  dom.imageInput?.addEventListener('change', (e) => handleFiles(e.target.files));
+  dom.videoInput?.addEventListener('change', (e) => handleFiles(e.target.files));
+  dom.folderInput?.addEventListener('change', (e) => handleFiles(e.target.files));
 
-  /* ========================================================================
-     13. Drag and drop - drop zone + whole window support
-     ======================================================================== */
+  // Drag and drop on the whole window (only when transfer area is active).
   let dragCounter = 0;
-
-  function isTransferActive() {
-    return transferArea && transferArea.classList.contains('active');
-  }
-
-  function highlightDropZone(on) {
-    if (dropZone) dropZone.classList.toggle('is-dragging', on);
-  }
-
-  // Window-level drag tracking. Always preventDefault for file drags so the
-  // browser does not navigate to the dropped file.
-  function isFileDrag(e) {
-    if (!e.dataTransfer) return false;
-    const types = e.dataTransfer.types || [];
-    for (let i = 0; i < types.length; i++) {
-      if (types[i] === 'Files') return true;
-    }
-    return false;
-  }
-
-  function notifyNoPeerForDrop() {
-    if (!statusText) return;
-    const prev = statusText.textContent;
-    const wasCustom = statusText.dataset.custom === 'true';
-    statusText.textContent = 'Connect to a peer first to drop files';
-    statusText.dataset.custom = 'true';
-    statusText.style.color = 'var(--warning)';
-    setTimeout(() => {
-      if (statusText.dataset.custom === 'true') {
-        statusText.textContent = wasCustom ? prev : t('ready');
-        statusText.dataset.custom = wasCustom ? 'true' : 'false';
-        statusText.style.color = '';
-      }
-    }, 2600);
-  }
-
-  window.addEventListener('dragenter', function (e) {
+  window.addEventListener('dragenter', (e) => {
+    if (!isTransferActive()) return;
     if (!isFileDrag(e)) return;
     e.preventDefault();
-    if (isTransferActive()) {
-      dragCounter += 1;
-      highlightDropZone(true);
-    }
+    dragCounter++;
+    dom.dropZone.classList.add('is-dragging');
   });
-
-  window.addEventListener('dragover', function (e) {
+  window.addEventListener('dragover', (e) => {
+    if (!isTransferActive()) return;
     if (!isFileDrag(e)) return;
     e.preventDefault();
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
   });
-
-  window.addEventListener('dragleave', function (e) {
-    if (!isFileDrag(e)) return;
+  window.addEventListener('dragleave', (e) => {
     if (!isTransferActive()) return;
     dragCounter = Math.max(0, dragCounter - 1);
-    if (dragCounter === 0) highlightDropZone(false);
+    if (dragCounter === 0) dom.dropZone.classList.remove('is-dragging');
   });
-
-  window.addEventListener('drop', async function (e) {
+  window.addEventListener('drop', async (e) => {
     if (!isFileDrag(e)) return;
     e.preventDefault();
     dragCounter = 0;
-    highlightDropZone(false);
-
+    dom.dropZone.classList.remove('is-dragging');
     if (!isTransferActive()) {
-      notifyNoPeerForDrop();
+      systemMessage('Connect to a peer first to drop files.');
       return;
     }
-
-    const dt = e.dataTransfer;
-    if (!dt) return;
-    const items = dt.items;
-    const files = [];
-
-    // Try to use DataTransferItemList (preserves webkitRelativePath for folders)
-    if (items && items.length && typeof DataTransferItem !== 'undefined' && items[0].webkitGetAsEntry) {
-      const entries = [];
-      for (let i = 0; i < items.length; i++) {
-        const entry = items[i].webkitGetAsEntry && items[i].webkitGetAsEntry();
-        if (entry) entries.push(entry);
-      }
-      if (entries.length) {
-        for (const entry of entries) {
-          const entryFiles = await collectEntryFiles(entry);
-          for (const f of entryFiles) files.push(f);
-        }
-        if (files.length) {
-          await sendDroppedFiles(files);
-          return;
-        }
-      }
-    }
-
-    // Fallback: plain FileList
-    if (dt.files && dt.files.length) {
-      for (const f of dt.files) files.push(f);
-      if (files.length) await sendDroppedFiles(files);
-    }
+    const files = await collectDroppedFiles(e.dataTransfer);
+    if (files.length) handleFiles(files);
   });
 
-  function readEntryPromise(entry) {
-    return new Promise((resolve) => entry.file(resolve, () => resolve(null)));
-  }
+  // TXT send button.
+  dom.sendTxtBtn?.addEventListener('click', sendAsTxt);
+}
 
-  function readEntriesPromise(dirReader) {
-    return new Promise((resolve) => dirReader.readEntries(resolve, () => resolve([])));
+function isFileDrag(e) {
+  if (!e.dataTransfer) return false;
+  const types = e.dataTransfer.types || [];
+  for (let i = 0; i < types.length; i++) {
+    if (types[i] === 'Files') return true;
   }
+  return false;
+}
 
-  async function collectEntryFiles(entry, pathPrefix) {
-    pathPrefix = pathPrefix || '';
-    const out = [];
+function isTransferActive() {
+  return dom.transferArea && dom.transferArea.classList.contains('active');
+}
+
+async function collectDroppedFiles(dt) {
+  const files = [];
+  const items = dt.items;
+  if (items && items.length && items[0].webkitGetAsEntry) {
+    const entries = [];
+    for (let i = 0; i < items.length; i++) {
+      const entry = items[i].webkitGetAsEntry && items[i].webkitGetAsEntry();
+      if (entry) entries.push(entry);
+    }
+    for (const entry of entries) {
+      const entryFiles = await collectEntryFiles(entry);
+      files.push(...entryFiles);
+    }
+  } else if (dt.files && dt.files.length) {
+    for (const f of dt.files) files.push(f);
+  }
+  return files;
+}
+
+function collectEntryFiles(entry, prefix = '') {
+  return new Promise((resolve) => {
     if (entry.isFile) {
-      const file = await readEntryPromise(entry);
-      if (file) {
-        // Synthetic webkitRelativePath for downstream metadata
+      entry.file((f) => {
         try {
-          Object.defineProperty(file, 'webkitRelativePath', {
-            value: pathPrefix + file.name,
-            writable: false,
-            configurable: false
+          Object.defineProperty(f, 'webkitRelativePath', {
+            value: prefix + entry.name,
+            writable: false
           });
         } catch (_) {}
-        out.push(file);
-      }
+        resolve([f]);
+      }, () => resolve([]));
     } else if (entry.isDirectory) {
       const reader = entry.createReader();
-      let allEntries = [];
-      let batch = await readEntriesPromise(reader);
-      while (batch.length) {
-        allEntries = allEntries.concat(batch);
-        batch = await readEntriesPromise(reader);
-      }
-      for (const child of allEntries) {
-        const nested = await collectEntryFiles(child, pathPrefix + entry.name + '/');
-        for (const f of nested) out.push(f);
-      }
-    }
-    return out;
-  }
-
-  async function sendDroppedFiles(files) {
-    if (!conn) {
-      systemMessage('systemError', { name: files.length + ' file(s)' });
-      return;
-    }
-    if (files.length > 1) {
-      showZipChoice(files);
-      return;
-    }
-    const file = files[0];
-    const hasFolder = file.webkitRelativePath && file.webkitRelativePath.indexOf('/') > -1;
-    if (hasFolder) {
-      const folderName = file.webkitRelativePath.split('/')[0];
-      systemMessage('systemSending', { name: file.name });
-      sendFile(file, { folder: true, relativePath: file.webkitRelativePath || file.name });
+      const all = [];
+      const readBatch = () => {
+        reader.readEntries(async (batch) => {
+          if (!batch.length) {
+            const nested = await Promise.all(
+              all.map(child => collectEntryFiles(child, prefix + entry.name + '/'))
+            );
+            resolve(nested.flat());
+          } else {
+            all.push(...batch);
+            readBatch();
+          }
+        }, () => resolve([]));
+      };
+      readBatch();
     } else {
-      systemMessage('systemSending', { name: file.name });
-      await sendFile(file, { label: 'drag-drop' });
+      resolve([]);
     }
+  });
+}
+
+async function handleFiles(fileList) {
+  if (!state.connection || !fileList || !fileList.length) return;
+  const files = Array.from(fileList);
+  if (files.length > 1) {
+    showZipChoice(files);
+  } else {
+    await sendSingleFile(files[0]);
   }
+}
 
-  // Note: no dropZone-level drop listener. The window-level drop handler
-  // above already calls preventDefault for any file drag, which prevents
-  // the browser from opening the file. Adding a stopPropagation-only
-  // listener here would BREAK that default prevention. See task 2.
-
-  /* ========================================================================
-     14. Send message
-     ======================================================================== */
-  function sendMessage() {
-    const text = msgInput.value.trim();
-    if ((!text && pendingAttachments.length === 0) || !conn) return;
-    for (const file of pendingAttachments) {
-      systemMessage('systemSending', { name: file.name });
-      sendFile(file, { label: 'pasted-text', source: 'paste-intercept' });
-    }
-    pendingAttachments = [];
-    renderPendingAttachments();
-    if (text) {
-      // Auto-route very large text through the chunked file-transfer path
-      // so it does not blow the WebRTC data-channel message size limit.
-      if (text.length > TEXT_MESSAGE_LIMIT) {
-        const filename = 'shared-text-' + Date.now() + '.txt';
-        const file = buildTxtFile(text, filename);
-        systemMessage('systemSending', { name: filename });
-        sendFile(file, { label: 'large-text', source: 'auto-text-to-file' });
-      } else {
-        conn.send({ type: 'text', payload: text });
-        addMessage('Me', text, 'sent');
-      }
-    }
-    msgInput.value = '';
+async function sendSingleFile(file) {
+  if (!state.connection) return;
+  state.transferInProgress = true;
+  showProgress(file.name, file.size);
+  try {
+    await state.connection.waitForDataChannel();
+    await state.connection.sendFile(file);
+    systemMessage('Sent: ' + file.name);
+  } catch (e) {
+    systemMessage('Error sending ' + file.name + ': ' + e.message);
+  } finally {
+    state.transferInProgress = false;
+    hideProgress();
   }
+}
 
-  sendBtn.addEventListener('click', sendMessage);
-  msgInput.addEventListener('keypress', (e) => {
+// ============================================================================
+// ZIP choice modal
+// ============================================================================
+function showZipChoice(files) {
+  dom.zipChoiceFiles = files;
+  if (dom.zipChoiceSubtitle) {
+    dom.zipChoiceSubtitle.textContent = 'You selected ' + files.length +
+      ' files. How would you like to send them?';
+  }
+  dom.zipChoiceOverlay.classList.add('open');
+}
+
+function closeZipChoice() {
+  dom.zipChoiceOverlay.classList.remove('open');
+  dom.zipChoiceFiles = null;
+}
+
+function initZipChoice() {
+  dom.zipChoiceClose?.addEventListener('click', closeZipChoice);
+  dom.zipCancelBtn?.addEventListener('click', closeZipChoice);
+  dom.zipChoiceOverlay?.addEventListener('click', (e) => {
+    if (e.target === dom.zipChoiceOverlay) closeZipChoice();
+  });
+  dom.zipChooseIndivBtn?.addEventListener('click', async () => {
+    const files = dom.zipChoiceFiles;
+    closeZipChoice();
+    for (const file of files) {
+      await sendSingleFile(file);
+    }
+  });
+  dom.zipChooseArchiveBtn?.addEventListener('click', async () => {
+    const files = dom.zipChoiceFiles;
+    closeZipChoice();
+    try {
+      systemMessage('Creating ZIP archive...');
+      const zipFile = await createZip(files);
+      await sendSingleFile(zipFile);
+    } catch (e) {
+      systemMessage('ZIP creation failed: ' + e.message);
+    }
+  });
+}
+
+// ============================================================================
+// Text messaging + TXT file send
+// ============================================================================
+function initMessaging() {
+  dom.sendBtn?.addEventListener('click', sendMessage);
+  dom.msgInput?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
   });
+}
 
-  connectBtn.addEventListener('click', function () {
-    const target = targetIdInput.value.trim();
-    if (target) connectToPeer(target);
+function sendMessage() {
+  const text = dom.msgInput.value.trim();
+  if (!text || !state.connection) return;
+  try {
+    state.connection.sendText(text);
+    addMessage('Me', text, 'sent');
+    dom.msgInput.value = '';
+  } catch (e) {
+    systemMessage(e.message);
+  }
+}
+
+async function sendAsTxt() {
+  const text = dom.msgInput.value;
+  if (!text || !state.connection) return;
+  const filename = 'shared-text-' + Date.now() + '.txt';
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const file = new File([blob], filename, { type: 'text/plain;charset=utf-8' });
+  dom.msgInput.value = '';
+  await sendSingleFile(file);
+}
+
+// ============================================================================
+// Received file display
+// ============================================================================
+function showReceivedFile(info, blob) {
+  const url = URL.createObjectURL(blob);
+  const div = document.createElement('div');
+  div.className = 'message received';
+
+  const meta = document.createElement('div');
+  meta.innerHTML = '<strong>' + ICONS.paperclip + ' ' + escapeHtml(info.filename) + '</strong>' +
+    '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">' +
+    formatFileSize(info.filesize) +
+    (info.hash ? (info.hashOk ? ' | verified' : ' | HASH MISMATCH') : '') +
+    '</div>';
+  div.appendChild(meta);
+
+  if (info.hashOk === false) {
+    const warn = document.createElement('div');
+    warn.style.cssText = 'color:var(--danger);font-size:0.8rem;margin-top:4px;';
+    warn.textContent = 'File integrity check failed. The file may be corrupted.';
+    div.appendChild(warn);
+  }
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = info.filename;
+  link.className = 'btn btn-success';
+  link.style.cssText = 'margin-top:8px;padding:6px 12px;font-size:0.8rem;display:inline-flex;align-items:center;gap:6px;';
+  link.innerHTML = ICONS.download + ' Download';
+  div.appendChild(link);
+
+  if ((info.filetype || '').startsWith('image/')) {
+    const img = document.createElement('img');
+    img.src = url;
+    img.className = 'file-preview';
+    img.style.maxHeight = '160px';
+    div.appendChild(img);
+  } else if ((info.filetype || '').startsWith('video/')) {
+    const vid = document.createElement('video');
+    vid.src = url;
+    vid.controls = true;
+    vid.className = 'file-preview';
+    vid.style.maxHeight = '160px';
+    div.appendChild(vid);
+  }
+
+  dom.chatBox.appendChild(div);
+  dom.chatBox.scrollTop = dom.chatBox.scrollHeight;
+
+  // Revoke blob URL after 5 minutes to free memory.
+  setTimeout(() => { try { URL.revokeObjectURL(url); } catch (_) {} }, 300000);
+}
+
+// ============================================================================
+// Transfer progress UI
+// ============================================================================
+function showProgress(filename, totalSize) {
+  if (!dom.transferProgressContainer) return;
+  dom.transferProgressContainer.style.display = 'block';
+  dom.transferProgressFilename.textContent = filename;
+  dom.transferProgress.style.width = '0%';
+  dom.transferProgressText.textContent = '0 / ' + formatFileSize(totalSize);
+}
+
+function hideProgress() {
+  if (dom.transferProgressContainer) {
+    dom.transferProgressContainer.style.display = 'none';
+  }
+}
+
+// ============================================================================
+// TipNest support button
+// ============================================================================
+function initTipNest() {
+  if (!dom.tipNestBtn) return;
+  if (TIPNEST_URL && TIPNEST_URL.length > 0) {
+    dom.tipNestBtn.href = TIPNEST_URL;
+    dom.tipNestBtn.target = '_blank';
+    dom.tipNestBtn.rel = 'noopener';
+    dom.tipNestBtn.style.display = '';
+  } else {
+    dom.tipNestBtn.style.display = 'none';
+  }
+}
+
+// ============================================================================
+// Connection action buttons
+// ============================================================================
+function initActionButtons() {
+  dom.disconnectBtn?.addEventListener('click', () => {
+    resetUI();
+    systemMessage('Disconnected.');
+  });
+  dom.qrOpenBtn?.addEventListener('click', startSenderSession);
+  dom.scanOpenBtn?.addEventListener('click', openScanner);
+  dom.scannerClose?.addEventListener('click', closeScanner);
+  dom.scannerModalOverlay?.addEventListener('click', (e) => {
+    if (e.target === dom.scannerModalOverlay) closeScanner();
   });
 
-  disconnectBtn.addEventListener('click', function () {
-    if (conn) {
-      try { conn.close(); } catch (_) {}
-      resetUI();
-      systemMessage('systemClosed');
-    }
-  });
-
-  copyIdBtn.addEventListener('click', function () {
-    const id = myIdDisplay.textContent;
-    const btn = this;
-    function showCopied() {
-      const original = btn.innerHTML;
-      btn.innerHTML = ICONS.check;
-      setTimeout(() => { btn.innerHTML = original; }, 1500);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(id).then(showCopied).catch(() => {
-        const ta = document.createElement('textarea');
-        ta.value = id;
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand('copy'); } catch (_) {}
-        ta.remove();
-        showCopied();
-      });
-    } else {
-      const ta = document.createElement('textarea');
-      ta.value = id;
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); } catch (_) {}
-      ta.remove();
-      showCopied();
-    }
-  });
-
-  /* ========================================================================
-     15. QR modal logic (Postbase-backed pairing preserved)
-     ======================================================================== */
-  const qrModalOverlay       = document.getElementById('qrModalOverlay');
-  const qrModalClose         = document.getElementById('qrModalClose');
-  const qrOpenBtn            = document.getElementById('qrOpenBtn');
-  const qrRefreshBtn         = document.getElementById('qrRefreshBtn');
-  const qrToggleScanBtn      = document.getElementById('qrToggleScanBtn');
-  const qrStatus             = document.getElementById('qrStatus');
-  const qrCodeContainer     = document.getElementById('qrCodeContainer');
-  const qrScannerContainer   = document.getElementById('qrScannerContainer');
-  const qrScanError          = document.getElementById('qrScanError');
-  const qrChoiceView         = document.getElementById('qrChoiceView');
-  const qrChooseShowBtn      = document.getElementById('qrChooseShowBtn');
-  const qrChooseScanBtn      = document.getElementById('qrChooseScanBtn');
-  const qrDisplayArea        = document.getElementById('qrDisplayArea');
-  const qrScannerView        = document.getElementById('qrScannerView');
-  const qrBackToChoicesBtn   = document.getElementById('qrBackToChoicesBtn');
-  const qrBackFromScannerBtn = document.getElementById('qrBackFromScannerBtn');
-  const qrModalTitle         = document.getElementById('qrModalTitle');
-
-  /* ZIP choice modal (multi-file send) */
-  const zipChoiceOverlay     = document.getElementById('zipChoiceOverlay');
-  const zipChoiceClose       = document.getElementById('zipChoiceClose');
-  const zipChooseIndivBtn    = document.getElementById('zipChooseIndivBtn');
-  const zipChooseArchiveBtn  = document.getElementById('zipChooseArchiveBtn');
-  const zipCancelBtn         = document.getElementById('zipCancelBtn');
-  const zipModalTitle        = document.getElementById('zipModalTitle');
-  const zipChoiceSubtitle    = document.getElementById('zipChoiceSubtitle');
-  const zipStatus            = document.getElementById('zipStatus');
-
-  /* TXT send button (in chat input) */
-  const sendTxtBtn           = document.getElementById('sendTxtBtn');
-
-  let activeSessionId = null;
-  let activeSubscription = null;
-  let qrCodeInstance = null;
-  let html5QrCode = null;
-  let scannerActive = false;
-  let isQrGenerating = false;
-
-  function generateUUID() {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-      return crypto.randomUUID();
-    }
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  }
-
-  async function generateQRSession() {
-    if (isQrGenerating) return;
-    isQrGenerating = true;
-    qrStatus.textContent = t('qrConnecting') + '...';
-    qrScanError.textContent = '';
-
-    const sessionId = generateUUID();
-    const desktopPeerId = myId;
-
-    try {
-      // Postbase-backed create - exact contract preserved
-      await apiCreateSession(sessionId);
-      activeSessionId = sessionId;
-
-      const qrData = JSON.stringify({ sessionId: sessionId, peerId: desktopPeerId });
-
-      qrCodeContainer.innerHTML = '';
-      qrCodeInstance = new QRCode(qrCodeContainer, {
-        text: qrData,
-        width: 200,
-        height: 200,
-        colorDark: '#000000',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.H
-      });
-
-      qrStatus.textContent = t('qrWaiting');
-      qrStatus.dataset.manual = 'true';
-      qrStatus.style.color = '';
-
-      if (activeSubscription) {
-        clearInterval(activeSubscription);
-        activeSubscription = null;
-      }
-
-      activeSubscription = setInterval(async () => {
-        try {
-          // Postbase-backed read - exact contract preserved
-          const data = await apiGetSession(sessionId);
-          const row = data && data.session;
-          if (row && row.status === 'connected') {
-            qrStatus.textContent = t('qrConnected');
-            qrStatus.style.color = 'var(--success)';
-            clearInterval(activeSubscription);
-            activeSubscription = null;
-            setTimeout(() => { closeQRModal(); }, 1500);
-          }
-        } catch (pollError) {
-          console.warn('Session poll error:', pollError);
-        }
-      }, 1500);
-
-    } catch (err) {
-      console.error('QR session error:', err);
-      qrStatus.textContent = t('qrError', { msg: err.message || 'Unknown' });
-      qrStatus.style.color = 'var(--danger)';
-    } finally {
-      isQrGenerating = false;
-    }
-  }
-
-  function refreshQR() {
-    if (activeSubscription) {
-      clearInterval(activeSubscription);
-      activeSubscription = null;
-    }
-    activeSessionId = null;
-    qrStatus.style.color = '';
-    qrScanError.textContent = '';
-    generateQRSession();
-  }
-
-  function closeQRModal() {
-    qrModalOverlay.classList.remove('open');
-    stopScanner();
-    if (activeSubscription) {
-      clearInterval(activeSubscription);
-      activeSubscription = null;
-    }
-    qrScanError.textContent = '';
-    qrStatus.style.color = '';
-    qrChoiceView.style.display = 'flex';
-    qrDisplayArea.style.display = 'none';
-    qrScannerView.style.display = 'none';
-    if (conn && conn.open) {
-      showTransferUI(conn.peer);
-    }
-  }
-
-  function openQRModal() {
-    qrModalOverlay.classList.add('open');
-    showQRChoices();
-  }
-
-  function showQRChoices() {
-    stopScanner();
-    qrChoiceView.style.display = 'flex';
-    qrDisplayArea.style.display = 'none';
-    qrScannerView.style.display = 'none';
-    qrScanError.textContent = '';
-    qrStatus.style.color = '';
-    qrModalTitle.textContent = 'Connect via QR';
-  }
-
-  async function showMyQR() {
-    stopScanner();
-    qrChoiceView.style.display = 'none';
-    qrScannerView.style.display = 'none';
-    qrDisplayArea.style.display = 'flex';
-    qrScanError.textContent = '';
-    qrStatus.style.color = '';
-    qrModalTitle.textContent = 'Show my QR';
-
-    if (activeSessionId) {
-      if (activeSubscription) {
-        clearInterval(activeSubscription);
-        activeSubscription = null;
-      }
-      activeSessionId = null;
-    }
-    await generateQRSession();
-  }
-
-  async function startScannerMode() {
-    stopScanner();
-    qrChoiceView.style.display = 'none';
-    qrDisplayArea.style.display = 'none';
-    qrScannerView.style.display = 'block';
-    qrScanError.textContent = '';
-    qrModalTitle.textContent = 'Scan QR Code';
-
-    try {
-      if (!window.Html5Qrcode) {
-        throw new Error('QR scanner library failed to load.');
-      }
-      html5QrCode = new Html5Qrcode('qrScannerContainer');
-      const config = {
-        fps: 10,
-        qrbox: { width: 240, height: 240 },
-        aspectRatio: 1.0,
-        rememberLastUsedCamera: true
-      };
-      await html5QrCode.start(
-        { facingMode: { exact: 'environment' } },
-        config,
-        onScanSuccess,
-        onScanError
-      );
-      scannerActive = true;
-    } catch (firstErr) {
-      console.warn('Rear camera failed, trying default:', firstErr);
-      try {
-        if (html5QrCode) {
-          try { await html5QrCode.clear(); } catch (_) {}
-        }
-        html5QrCode = new Html5Qrcode('qrScannerContainer');
-        const config = {
-          fps: 10,
-          qrbox: { width: 240, height: 240 },
-          aspectRatio: 1.0,
-          rememberLastUsedCamera: true
-        };
-        const cameras = await Html5Qrcode.getCameras();
-        if (!cameras || !cameras.length) {
-          throw new Error('No camera found.');
-        }
-        const rear = cameras.find(c => /back|rear|environment/i.test(c.label));
-        const cameraId = (rear || cameras[0]).id;
-        await html5QrCode.start(cameraId, config, onScanSuccess, onScanError);
-        scannerActive = true;
-      } catch (secondErr) {
-        console.error('Camera start failed:', secondErr);
-        const message = (secondErr && secondErr.message) || (firstErr && firstErr.message) || 'Unable to open camera.';
-        qrScanError.innerHTML = '<strong>Camera could not be opened.</strong><br>' +
-          escapeHtml(message) + '<br><br>Make sure HTTPS is enabled and camera permission granted.';
-        scannerActive = false;
-      }
-    }
-  }
-
-  async function stopScanner() {
-    if (html5QrCode) {
-      try {
-        if (scannerActive) {
-          await html5QrCode.stop();
-        }
-      } catch (_) {}
-      try { await html5QrCode.clear(); } catch (_) {}
-      html5QrCode = null;
-    }
-    scannerActive = false;
-  }
-
-  async function onScanSuccess(decodedText) {
-    console.log('QR decoded:', decodedText);
-
-    await stopScanner();
-
-    let peerId = null;
-    let sessionId = null;
-
-    try {
-      const data = JSON.parse(decodedText);
-      peerId = data.peerId || data.targetPeerId || null;
-      sessionId = data.sessionId || null;
-    } catch (e) {
-      const plain = String(decodedText || '').trim();
-      if (/^[A-Za-z0-9\-_]{2,64}$/.test(plain)) peerId = plain;
-    }
-
-    console.log('QR target peer ID:', peerId);
-    console.log('QR session ID:', sessionId);
-
-    qrStatus.textContent = t('qrConnecting');
-    qrScanError.textContent = '';
-
-    if (!peerId) {
-      qrScanError.textContent = 'Invalid QR data. Missing peer ID.';
-      console.error('Invalid QR, no peerId found.');
-      return;
-    }
-
-    try {
-      if (!peer || !peer.id) {
-        console.log('Peer not ready, waiting...');
-        let waited = 0;
-        while ((!peer || !peer.id) && waited < 5000) {
-          await new Promise(resolve => setTimeout(resolve, 200));
-          waited += 200;
-        }
-      }
-      if (!peer || !peer.id) {
-        throw new Error('PeerJS is not ready. Refresh and try again.');
-      }
-
-      connectToPeer(peerId);
-
-      const start = Date.now();
-      const timeout = 15000;
-
-      (function waitForConnection() {
-        if (conn && conn.open) {
-          console.log('Connection opened after QR scan, peer:', conn.peer);
-          qrStatus.textContent = t('qrConnected');
-          qrStatus.style.color = 'var(--success)';
-
-          // Postbase-backed connect - exact contract preserved
-          if (sessionId) {
-            apiMarkConnected(sessionId)
-              .then(() => console.log('Session marked as connected'))
-              .catch(e => console.warn('Session update failed:', e));
-          }
-
-          setTimeout(() => { closeQRModal(); }, 700);
-          return;
-        }
-        if (Date.now() - start > timeout) {
-          qrScanError.textContent = 'Connection timed out. Try scanning again.';
-          console.error('QR connection timed out for peerId', peerId);
-          return;
-        }
-        setTimeout(waitForConnection, 200);
-      })();
-
-    } catch (err) {
-      console.error('QR connection error:', err);
-      qrScanError.textContent = 'Connection failed: ' + (err.message || err);
-    }
-  }
-
-  function onScanError() {
-    // Continuous scanning errors are ignored
-  }
-
-  qrOpenBtn.addEventListener('click', openQRModal);
-  qrModalClose.addEventListener('click', closeQRModal);
-  qrRefreshBtn.addEventListener('click', showMyQR);
-  qrChooseShowBtn.addEventListener('click', showMyQR);
-  qrChooseScanBtn.addEventListener('click', startScannerMode);
-  qrToggleScanBtn.addEventListener('click', startScannerMode);
-  qrBackToChoicesBtn.addEventListener('click', showQRChoices);
-  qrBackFromScannerBtn.addEventListener('click', showQRChoices);
-
-  qrModalOverlay.addEventListener('click', function (e) {
-    if (e.target === this) closeQRModal();
-  });
-
-  /* ========================================================================
-     15b. ZIP choice modal + multi-file send logic
-     Uses JSZip (loaded from CDN in index.html) when the user chooses
-     "Send as ZIP". Falls back to individual sends if JSZip is unavailable.
-     ======================================================================== */
-  let pendingZipFiles = [];
-  const ZIP_SIZE_WARN = 200 * 1024 * 1024;  // 200MB soft cap
-
-  function showZipChoice(files) {
-    if (!zipChoiceOverlay) return;
-    pendingZipFiles = Array.from(files);
-    const count = pendingZipFiles.length;
-    if (zipChoiceSubtitle) {
-      zipChoiceSubtitle.textContent = 'You selected ' + count + ' file' +
-        (count !== 1 ? 's' : '') + '. How would you like to send them?';
-    }
-    if (zipStatus) {
-      const totalBytes = pendingZipFiles.reduce((s, f) => s + (f.size || 0), 0);
-      if (totalBytes > ZIP_SIZE_WARN) {
-        zipStatus.textContent = 'Total size: ' + formatFileSize(totalBytes) +
-          '. ZIP archiving may take a while or fail on very large sets.';
-        zipStatus.style.color = 'var(--warning)';
-      } else {
-        zipStatus.textContent = 'Total size: ' + formatFileSize(totalBytes);
-        zipStatus.style.color = '';
-      }
-    }
-    zipChoiceOverlay.classList.add('open');
-  }
-
-  function closeZipChoice() {
-    if (!zipChoiceOverlay) return;
-    zipChoiceOverlay.classList.remove('open');
-    pendingZipFiles = [];
-    if (zipStatus) {
-      zipStatus.textContent = '';
-      zipStatus.style.color = '';
-    }
-  }
-
-  async function sendFilesIndividually(files) {
-    if (!conn || !files || !files.length) return;
-    const list = Array.from(files);
-    const hasFolder = list.some(f => f.webkitRelativePath && f.webkitRelativePath.indexOf('/') > -1);
-    if (hasFolder) {
-      const folderName = (list.find(f => f.webkitRelativePath) || list[0])
-        .webkitRelativePath.split('/')[0];
-      systemMessage('systemFolder', { name: folderName, count: list.length });
-      try {
-        await waitForConnectionOpen(conn);
-        for (const file of list) {
-          systemMessage('systemSending', { name: file.name });
-          await sendFile(file, { folder: true, relativePath: file.webkitRelativePath || file.name });
-        }
-        systemMessage('systemFolderSent', { name: folderName });
-      } catch (err) {
-        console.error('Folder transfer error:', err);
-        systemMessage('systemError', { name: folderName });
-      }
-    } else {
-      for (const file of list) {
-        systemMessage('systemSending', { name: file.name });
-        await sendFile(file, { label: 'multi' });
-      }
-    }
-  }
-
-  // Sanitize a path so it cannot escape the archive root.
-  function sanitizeZipPath(path) {
-    let p = String(path || '').replace(/\\/g, '/');
-    // Strip leading slashes and drive prefixes
-    p = p.replace(/^([a-zA-Z]:)?\/+/, '');
-    // Remove any ".." path segments
-    p = p.split('/').filter(seg => seg !== '..' && seg !== '.').join('/');
-    return p;
-  }
-
-  // Avoid duplicate entry names inside the archive by suffixing " (n)".
-  function dedupeName(name, usedSet) {
-    let finalName = name;
-    let counter = 1;
-    while (usedSet.has(finalName)) {
-      const dotIdx = name.lastIndexOf('.');
-      if (dotIdx > 0) {
-        finalName = name.slice(0, dotIdx) + ' (' + counter + ')' + name.slice(dotIdx);
-      } else {
-        finalName = name + ' (' + counter + ')';
-      }
-      counter++;
-    }
-    usedSet.add(finalName);
-    return finalName;
-  }
-
-  async function sendFilesAsZip(files) {
-    if (!conn) return;
-    if (!window.JSZip) {
-      systemMessage('systemError', { name: 'ZIP library failed to load. Sending individually.' });
-      await sendFilesIndividually(files);
-      return;
-    }
-    const list = Array.from(files);
-    const totalBytes = list.reduce((s, f) => s + (f.size || 0), 0);
-    if (totalBytes > ZIP_SIZE_WARN) {
-      if (zipStatus) {
-        zipStatus.textContent = 'Archiving ' + formatFileSize(totalBytes) +
-          '... this may take a moment.';
-        zipStatus.style.color = 'var(--warning)';
-      }
-    }
-    const archiveName = 'webdrop-files.zip';
-    systemMessage('systemSending', { name: archiveName });
-    try {
-      const zip = new JSZip();
-      const usedNames = new Set();
-      for (const file of list) {
-        const originalPath = file.webkitRelativePath || file.name;
-        const safePath = sanitizeZipPath(originalPath);
-        const finalPath = dedupeName(safePath || file.name, usedNames);
-        zip.file(finalPath, file);
-      }
-      const blob = await zip.generateAsync({
-        type: 'blob',
-        compression: 'DEFLATE',
-        compressionOptions: { level: 6 }
-      });
-      const zipFile = new File([blob], archiveName, { type: 'application/zip' });
-      await sendFile(zipFile, { label: 'zip', source: 'multi-zip' });
-      systemMessage('systemSent', { name: archiveName });
-    } catch (err) {
-      console.error('ZIP creation error:', err);
-      systemMessage('systemError', { name: archiveName });
-    }
-  }
-
-  if (zipChoiceClose) zipChoiceClose.addEventListener('click', closeZipChoice);
-  if (zipCancelBtn) zipCancelBtn.addEventListener('click', closeZipChoice);
-  if (zipChoiceOverlay) {
-    zipChoiceOverlay.addEventListener('click', function (e) {
-      if (e.target === this) closeZipChoice();
-    });
-  }
-  if (zipChooseIndivBtn) {
-    zipChooseIndivBtn.addEventListener('click', async function () {
-      const files = pendingZipFiles;
-      closeZipChoice();
-      await sendFilesIndividually(files);
-    });
-  }
-  if (zipChooseArchiveBtn) {
-    zipChooseArchiveBtn.addEventListener('click', async function () {
-      const files = pendingZipFiles;
-      closeZipChoice();
-      await sendFilesAsZip(files);
-    });
-  }
-
-  /* ========================================================================
-     15c. TXT send button + large-text handling
-     The TXT button converts the current msgInput text into a .txt File and
-     sends it via the existing chunked file-transfer path. The regular Send
-     button still sends as a text message, but automatically routes through
-     file transfer if the text exceeds the WebRTC safe message size.
-     ======================================================================== */
-  const TEXT_MESSAGE_LIMIT = 64 * 1024; // 64KB safe ceiling for WebRTC text
-
-  function buildTxtFile(text, filename) {
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    return new File([blob], filename, { type: 'text/plain;charset=utf-8' });
-  }
-
-  function sendCurrentInputAsTxt() {
-    const text = msgInput.value;
-    if (!text || !conn) return;
-    const trimmed = text;
-    const timestamp = Date.now();
-    const filename = 'shared-text-' + timestamp + '.txt';
-    const file = buildTxtFile(trimmed, filename);
-    systemMessage('systemSending', { name: filename });
-    sendFile(file, { label: 'manual-txt', source: 'send-as-txt-button' });
-    msgInput.value = '';
-  }
-
-  if (sendTxtBtn) sendTxtBtn.addEventListener('click', sendCurrentInputAsTxt);
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' || e.keyCode === 27) {
-      if (qrModalOverlay.classList.contains('open')) {
-        closeQRModal();
-      } else if (zipChoiceOverlay && zipChoiceOverlay.classList.contains('open')) {
-        closeZipChoice();
+  // Copy session code from QR modal.
+  dom.copyCodeBtn?.addEventListener('click', () => {
+    if (state.sessionCode) {
+      const text = formatSessionCode(state.sessionCode);
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          dom.copyCodeBtn.innerHTML = ICONS.check;
+          setTimeout(() => { dom.copyCodeBtn.innerHTML = ICONS.copy; }, 1500);
+        });
       }
     }
   });
 
-  /* ========================================================================
-     16. Init
-     ======================================================================== */
-  initPeer();
-  updateUI();
-  updateScannerState('idle');
+  // Check URL for ?join=CODE (receiver flow via link).
+  const params = new URLSearchParams(window.location.search);
+  const joinCode = params.get('join');
+  if (joinCode && cleanSessionCode(joinCode).length === 12) {
+    joinSession(joinCode);
+  }
+}
 
-  // Public hooks (kept for parity with original)
-  window.__webdropQR = {
-    openQRModal: openQRModal,
-    closeQRModal: closeQRModal,
-    refreshQR: refreshQR,
-    connectToPeer: connectToPeer,
-    refreshConnection: refreshConnection
+// ============================================================================
+// Init
+// ============================================================================
+function collectDomRefs() {
+  dom = {
+    themeToggle: document.getElementById('themeToggle'),
+    deviceNameInput: document.getElementById('deviceNameInput'),
+    avatarDisplay: document.getElementById('avatarDisplay'),
+    cookieConsent: document.getElementById('cookieConsent'),
+    acceptCookiesBtn: document.getElementById('acceptCookiesBtn'),
+    setupArea: document.getElementById('setupArea'),
+    transferArea: document.getElementById('transferArea'),
+    scannerState: document.getElementById('scannerState'),
+    connectionType: document.getElementById('connectionType'),
+    connectionTypeTransfer: document.getElementById('connectionTypeTransfer'),
+    disconnectBtn: document.getElementById('disconnectBtn'),
+    qrOpenBtn: document.getElementById('qrOpenBtn'),
+    scanOpenBtn: document.getElementById('scanOpenBtn'),
+    qrModalOverlay: document.getElementById('qrModalOverlay'),
+    qrModalClose: document.getElementById('qrModalClose'),
+    qrCodeContainer: document.getElementById('qrCodeContainer'),
+    qrStatus: document.getElementById('qrStatus'),
+    qrSessionCode: document.getElementById('qrSessionCode'),
+    copyCodeBtn: document.getElementById('copyCodeBtn'),
+    scannerModalOverlay: document.getElementById('scannerModalOverlay'),
+    scannerClose: document.getElementById('scannerClose'),
+    qrScanError: document.getElementById('qrScanError'),
+    manualCodeInput: document.getElementById('manualCodeInput'),
+    manualJoinBtn: document.getElementById('manualJoinBtn'),
+    dropZone: document.getElementById('dropZone'),
+    fileInput: document.getElementById('fileInput'),
+    imageInput: document.getElementById('imageInput'),
+    videoInput: document.getElementById('videoInput'),
+    folderInput: document.getElementById('folderInput'),
+    zipChoiceOverlay: document.getElementById('zipChoiceOverlay'),
+    zipChoiceClose: document.getElementById('zipChoiceClose'),
+    zipCancelBtn: document.getElementById('zipCancelBtn'),
+    zipChooseIndivBtn: document.getElementById('zipChooseIndivBtn'),
+    zipChooseArchiveBtn: document.getElementById('zipChooseArchiveBtn'),
+    zipChoiceSubtitle: document.getElementById('zipChoiceSubtitle'),
+    chatBox: document.getElementById('chatBox'),
+    msgInput: document.getElementById('msgInput'),
+    sendBtn: document.getElementById('sendBtn'),
+    sendTxtBtn: document.getElementById('sendTxtBtn'),
+    transferProgressContainer: document.getElementById('transferProgressContainer'),
+    transferProgress: document.getElementById('transferProgress'),
+    transferProgressFilename: document.getElementById('transferProgressFilename'),
+    transferProgressText: document.getElementById('transferProgressText'),
+    tipNestBtn: document.getElementById('tipNestBtn'),
+    footerYear: document.getElementById('footerYear')
   };
-})();
+  dom.zipChoiceFiles = null;
+}
+
+function init() {
+  collectDomRefs();
+  if (dom.footerYear) dom.footerYear.textContent = new Date().getFullYear();
+
+  state.peerId = generatePeerId();
+
+  initTheme();
+  initDeviceName();
+  initCookieConsent();
+  initActionButtons();
+  initQRModal();
+  initManualEntry();
+  initFileHandling();
+  initZipChoice();
+  initMessaging();
+  initTipNest();
+
+  loadIceServers();
+  setScannerState('idle');
+  setConnectionType('unknown');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
