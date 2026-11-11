@@ -3,9 +3,9 @@
 // Returns recent transfer history (last 24 hours) for the given peer_id.
 // Used by the temporary transfer history UI panel.
 // ============================================================================
-import { getSql } from '../../_lib/db.js';
-import { json, error, handleOptions, safe } from '../../_lib/response.js';
-import { cleanupExpired } from '../../_lib/cleanup.js';
+import { getSql } from '../_lib/db.js';
+import { json, error, handleOptions, safe } from '../_lib/response.js';
+import { cleanupExpired } from '../_lib/cleanup.js';
 
 async function handler({ env, request }) {
   const url = new URL(request.url);
