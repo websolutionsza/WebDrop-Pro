@@ -7,7 +7,7 @@
 // appear in the frontend bundle. In a future upgrade we can replace this
 // with a call to the Metered REST API to mint ephemeral credentials.
 // ============================================================================
-import { json, error, handleOptions, safe } from '../../_lib/response.js';
+import { json, error, handleOptions, safe } from '../_lib/response.js';
 
 async function handler({ env }) {
   const username = env.TURN_USERNAME;
