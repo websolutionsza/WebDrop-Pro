@@ -32,11 +32,7 @@
       "description": "Secure peer-to-peer file transfer tool. Send documents, photos, videos and folders directly between devices with end-to-end encrypted WebRTC.",
       "applicationCategory": "UtilitiesApplication",
       "operatingSystem": "Any",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      }
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
     }
     </script>
 
@@ -50,10 +46,9 @@
 </head>
 <body>
     <div id="app">
-        <!-- ============ Header ============ -->
         <header class="header" role="banner">
             <div class="header-left">
-                <button class="header-logo-btn" id="logoRefreshBtn" type="button" aria-label="Refresh network scan and peer connection" title="Refresh network">
+                <button class="header-logo-btn" id="logoRefreshBtn" type="button" aria-label="Refresh" title="Refresh">
                     <img class="header-logo" src="https://iili.io/CxcDCDx.png" alt="WebDrop Pro logo" />
                 </button>
                 <span class="header-title">
@@ -61,150 +56,113 @@
                     <small>P2P | encrypted</small>
                 </span>
             </div>
-
             <div class="header-controls">
                 <input type="text" id="deviceNameInput" placeholder="Device name" value="My Device" maxlength="20" aria-label="Device name" />
-                <select id="langSelect" aria-label="Language">
-                    <option value="en">English</option>
-                    <option value="es">Español</option>
-                    <option value="fr">Français</option>
-                    <option value="de">Deutsch</option>
-                    <option value="pt">Português</option>
-                    <option value="zh">中文</option>
-                </select>
-                <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle color theme" title="Toggle theme"></button>
+                <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle theme" title="Toggle theme"></button>
             </div>
         </header>
 
-        <!-- ============ Main content ============ -->
         <main class="content">
             <section id="setupArea">
-                <!-- ID card -->
                 <div class="id-card">
                     <div class="id-info">
                         <span class="avatar" id="avatarDisplay">DV</span>
                         <div>
-                            <div class="id-text-label" data-i18n="deviceId">Your Device ID</div>
+                            <div class="id-text-label">Your Device</div>
                             <div class="id-number">
-                                <span class="id-value" id="myIdDisplay">----</span>
-                                <button class="copy-btn" id="copyIdBtn" type="button" aria-label="Copy device ID" title="Copy ID">
-                                    <svg class="svg-icon sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                                </button>
+                                <span class="id-value" id="myIdDisplay">Ready</span>
                             </div>
                         </div>
                     </div>
                     <span class="status-badge">
                         <span class="pulse" aria-hidden="true"></span>
-                        <span data-i18n="active">Active</span>
+                        <span>Online</span>
                     </span>
                 </div>
 
-                <!-- Network scanner (honest state, no fake peer counts) -->
                 <section class="scanner-section">
                     <div class="scanner-head">
-                        <span class="scanner-icon" aria-hidden="true">
-                            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93"/><path d="M7.76 16.24a6 6 0 0 1 0-8.49"/><circle cx="12" cy="12" r="2"/></svg>
-                        </span>
-                        <h3 data-i18n="networkScanner">Network Scanner</h3>
-                        <button class="icon-btn" id="refreshBtn" type="button" aria-label="Refresh connection" title="Refresh connection" style="position:absolute;right:0;top:50%;transform:translateY(-50%);">
-                            <svg class="svg-icon" id="refreshIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
-                        </button>
+                        <h3>Transfer</h3>
                     </div>
-                    <div class="scanner-ring" id="scannerRing" role="img" aria-label="Peer scanner">
-                        <div class="scanner-sweep" aria-hidden="true"></div>
-                        <div class="scanner-center" aria-hidden="true"></div>
-                    </div>
-                    <p class="scanner-state" id="scannerState" data-i18n="scannerIdle">Idle, awaiting connection</p>
+                    <p class="scanner-state" id="scannerState">Idle, awaiting connection</p>
+                    <p class="connection-type" id="connectionType"></p>
                 </section>
 
-                <!-- Connection panel -->
                 <section class="connection-panel">
                     <div class="connection-row">
-                        <input type="text" id="targetId" placeholder="Enter peer ID (e.g. 1234)" maxlength="10" aria-label="Peer ID" />
-                        <button class="btn btn-primary" id="connectBtn" type="button">
-                            <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
-                            <span data-i18n="connect">Connect</span>
-                        </button>
-                        <button class="btn btn-secondary" id="qrOpenBtn" type="button">
+                        <button class="btn btn-primary" id="qrOpenBtn" type="button">
                             <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M17 21h4v-4M14 17v.01"/></svg>
-                            <span>QR Code</span>
+                            <span>Send Files</span>
+                        </button>
+                        <button class="btn btn-secondary" id="scanOpenBtn" type="button">
+                            <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                            <span>Scan QR</span>
                         </button>
                     </div>
-                    <div class="status-text" id="statusText" data-i18n="ready">Ready to connect</div>
+                    <div class="manual-entry">
+                        <input type="text" id="manualCodeInput" placeholder="Enter 12-char code (e.g. K7M3X9P2QR8T)" maxlength="14" aria-label="Session code" />
+                        <button class="btn btn-secondary" id="manualJoinBtn" type="button">Join</button>
+                    </div>
                 </section>
             </section>
 
-            <!-- ============ Transfer area (visible after connect) ============ -->
             <section class="transfer-area" id="transferArea" aria-live="polite">
                 <div class="peer-info">
                     <div class="peer-badge">
-                        <span class="peer-icon" aria-hidden="true">
-                            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg>
-                        </span>
-                        <div>
-                            <div class="peer-label" data-i18n="connectedTo">Connected to</div>
-                            <span class="peer-value" id="peerIdDisplay"></span>
-                        </div>
+                        <span class="peer-label">Connection</span>
+                        <span class="connection-type" id="connectionTypeTransfer"></span>
                     </div>
                     <button class="btn btn-danger" id="disconnectBtn" type="button">
                         <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2v6M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-12 0V8z"/><path d="M12 17v5"/></svg>
-                        <span data-i18n="disconnect">Disconnect</span>
+                        <span>Disconnect</span>
                     </button>
                 </div>
 
-                <!-- Drop zone -->
+                <div class="transfer-progress-container" id="transferProgressContainer" style="display:none;">
+                    <div class="transfer-progress-filename" id="transferProgressFilename"></div>
+                    <div class="transfer-progress-bar">
+                        <div class="transfer-progress-fill" id="transferProgress"></div>
+                    </div>
+                    <div class="transfer-progress-text" id="transferProgressText"></div>
+                </div>
+
                 <div class="drop-zone" id="dropZone" role="region" aria-label="File drop zone">
                     <div class="drop-icon" aria-hidden="true">
                         <svg class="svg-icon xl" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
                     </div>
-                    <strong data-i18n="dropTitle">Drop files to transfer</strong>
-                    <span data-i18n="dropSubtitle">Drag files, images, or folders anywhere into this window to send them over the secure P2P link.</span>
-                    <div class="drop-actions">
-                        <button class="btn btn-secondary" id="dropChooseFiles" type="button">
-                            <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-                            <span data-i18n="sendDocument">Send Document</span>
-                        </button>
-                        <button class="btn btn-secondary" id="dropChooseFolder" type="button">
-                            <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
-                            <span data-i18n="sendFolder">Send Folder</span>
-                        </button>
-                    </div>
-                    <input type="file" id="dropFileInput" multiple hidden />
-                    <input type="file" id="dropFolderInput" webkitdirectory hidden />
+                    <strong>Drop files to transfer</strong>
+                    <span>Drag files, images, or folders into this window to send them over the secure P2P link.</span>
                 </div>
 
-                <!-- File tray (click to select by type) -->
                 <div class="file-tray">
                     <label class="file-trigger">
                         <svg class="svg-icon lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-                        <span data-i18n="sendDocument">Send Document</span>
+                        <span>Document</span>
                         <input type="file" id="fileInput" multiple />
                     </label>
                     <label class="file-trigger">
                         <svg class="svg-icon lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
-                        <span data-i18n="sendImages">Send Images</span>
+                        <span>Images</span>
                         <input type="file" id="imageInput" accept="image/*" multiple />
                     </label>
                     <label class="file-trigger">
                         <svg class="svg-icon lg" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-4v12l-6-4z"/></svg>
-                        <span data-i18n="sendVideo">Send Video</span>
+                        <span>Video</span>
                         <input type="file" id="videoInput" accept="video/*" />
                     </label>
                     <label class="file-trigger">
                         <svg class="svg-icon lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
-                        <span data-i18n="sendFolder">Send Folder</span>
+                        <span>Folder</span>
                         <input type="file" id="folderInput" webkitdirectory />
                     </label>
                 </div>
 
-                <!-- Chat -->
                 <div class="chat-area">
                     <div class="chat-header">
                         <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-7.6-4.6L3 21l1.6-3.9A8.5 8.5 0 0 1 12.5 3a8.38 8.38 0 0 1 8.5 8.5z"/></svg>
-                        <span data-i18n="secureChat">Secure Chat</span>
+                        <span>Secure Chat</span>
                     </div>
                     <div class="chat-messages" id="chatBox" role="log" aria-live="polite"></div>
-                    <div id="pendingAttachments" class="pending-attachments"></div>
                     <div class="chat-input">
                         <input type="text" id="msgInput" placeholder="Type a message..." aria-label="Message input" />
                         <button class="chat-aux-btn" id="sendTxtBtn" type="button" aria-label="Send as text file" title="Send as .txt file">
@@ -218,7 +176,6 @@
             </section>
         </main>
 
-        <!-- ============ Glassmorphism Footer ============ -->
         <footer class="footer" role="contentinfo">
             <div class="footer-inner">
                 <span class="footer-brand">&copy; <span id="footerYear">2025</span> <strong>WebDrop Pro</strong>. All rights reserved.</span>
@@ -227,12 +184,15 @@
                     <span class="footer-divider" aria-hidden="true">/</span>
                     <a href="privacy.html">Privacy Policy</a>
                     <span class="footer-divider" aria-hidden="true">/</span>
+                    <a href="#" id="tipNestBtn" class="tipnest-btn" style="display:none;" aria-label="Support us on TipNest">
+                        <span class="heart" aria-hidden="true">&hearts;</span> Please support us
+                    </a>
+                    <span class="footer-divider" aria-hidden="true">/</span>
                     <span>Developed by <a href="https://websolutionsza.github.io/websolutionsSA/" target="_blank" rel="noopener">WebSolutionsSA</a></span>
                 </nav>
             </div>
         </footer>
 
-        <!-- ============ Cookie consent ============ -->
         <div class="cookie-consent" id="cookieConsent" role="dialog" aria-label="Cookie consent">
             <p>
                 We use cookies to improve your experience. By using our site you accept our
@@ -243,140 +203,80 @@
         </div>
     </div>
 
-    <!-- ============ QR Modal ============ -->
+    <!-- QR Generator Modal -->
     <div class="qr-overlay" id="qrModalOverlay" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
         <div class="qr-modal">
-            <button class="modal-close" id="qrModalClose" type="button" aria-label="Close QR dialog">
+            <button class="modal-close" id="qrModalClose" type="button" aria-label="Close">
                 <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
             <h2 class="modal-title">
                 <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M17 21h4v-4M14 17v.01"/></svg>
-                <span id="qrModalTitle">Connect via QR</span>
+                <span>Scan to Receive</span>
             </h2>
-
-            <div class="qr-choice-view" id="qrChoiceView">
-                <p class="qr-choice-subtitle">Choose how you want to connect.</p>
-                <button class="qr-mode-btn" id="qrChooseShowBtn" type="button">
-                    <span class="mode-icon" aria-hidden="true">
-                        <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M17 21h4v-4M14 17v.01"/></svg>
-                    </span>
-                    <span>
-                        Show my QR
-                        <small>Display this device QR code for the other device to scan.</small>
-                    </span>
-                </button>
-                <button class="qr-mode-btn" id="qrChooseScanBtn" type="button">
-                    <span class="mode-icon" aria-hidden="true">
-                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                    </span>
-                    <span>
-                        Scan QR
-                        <small>Open the camera and scan the QR code shown on another device.</small>
-                    </span>
-                </button>
-            </div>
-
-            <div class="qr-display-area" id="qrDisplayArea" style="display:none;">
-                <div id="qrCodeContainer">
-                    <div style="width:200px;height:200px;display:flex;align-items:center;justify-content:center;background:#f0f0f0;border-radius:6px;color:#666;font-size:0.85rem;">
-                        <span class="loading"></span> Loading...
-                    </div>
-                </div>
-                <div class="qr-status" id="qrStatus">Waiting for scan...</div>
-                <div class="qr-actions">
-                    <button class="btn btn-primary" id="qrRefreshBtn" type="button">
-                        <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
-                        <span data-i18n="qrRefresh">Refresh QR</span>
-                    </button>
-                    <button class="qr-toggle-btn" id="qrToggleScanBtn" type="button">
-                        <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        <span data-i18n="qrScan">Scan QR</span>
-                    </button>
-                </div>
-                <button class="qr-toggle-btn qr-back-btn" id="qrBackToChoicesBtn" type="button">
-                    <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-                    <span>Back</span>
-                </button>
-            </div>
-
-            <div id="qrScannerView" style="display:none;">
-                <div id="qrScannerContainer">
-                    <div class="scanner-placeholder">
-                        <svg class="svg-icon xl" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        <span>Camera will appear here.</span>
-                    </div>
-                </div>
-                <div id="qrScanError" class="qr-error"></div>
-                <div class="qr-actions">
-                    <button class="qr-toggle-btn" id="qrBackFromScannerBtn" type="button">
-                        <svg class="svg-icon" viewBox="0  0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-                        <span>Back</span>
+            <div class="qr-display-area">
+                <div id="qrCodeContainer"></div>
+                <div class="qr-status" id="qrStatus">Waiting for receiver...</div>
+                <div class="qr-code-display">
+                    <span id="qrSessionCode"></span>
+                    <button class="copy-btn" id="copyCodeBtn" type="button" aria-label="Copy code" title="Copy code">
+                        <svg class="svg-icon sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ============ ZIP choice modal (multi-file send) ============ -->
-    <div class="qr-overlay" id="zipChoiceOverlay" role="dialog" aria-modal="true" aria-labelledby="zipModalTitle">
+    <!-- QR Scanner Modal -->
+    <div class="qr-overlay" id="scannerModalOverlay" role="dialog" aria-modal="true" aria-labelledby="scannerTitle">
         <div class="qr-modal">
-            <button class="modal-close" id="zipChoiceClose" type="button" aria-label="Close send options">
+            <button class="modal-close" id="scannerClose" type="button" aria-label="Close">
+                <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+            <h2 class="modal-title">
+                <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span>Scan QR Code</span>
+            </h2>
+            <div id="qrScannerVideo" style="width:100%;max-width:340px;margin:0 auto;border-radius:8px;overflow:hidden;background:#000;min-height:240px;"></div>
+            <div id="qrScanError" class="qr-error"></div>
+        </div>
+    </div>
+
+    <!-- ZIP Choice Modal -->
+    <div class="qr-overlay" id="zipChoiceOverlay" role="dialog" aria-modal="true">
+        <div class="qr-modal">
+            <button class="modal-close" id="zipChoiceClose" type="button" aria-label="Close">
                 <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
             <h2 class="modal-title">
                 <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
-                <span id="zipModalTitle">Send multiple files</span>
+                <span>Send Multiple Files</span>
             </h2>
-            <p class="qr-choice-subtitle" id="zipChoiceSubtitle">You selected multiple files. How would you like to send them?</p>
+            <p class="qr-choice-subtitle" id="zipChoiceSubtitle">How would you like to send them?</p>
             <div class="qr-choice-view">
                 <button class="qr-mode-btn" id="zipChooseIndivBtn" type="button">
                     <span class="mode-icon" aria-hidden="true">
                         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
                     </span>
-                    <span>
-                        Send individually
-                        <small>Each file is sent as a separate transfer with its original name.</small>
-                    </span>
+                    <span>Send individually<small>Each file sent as a separate transfer.</small></span>
                 </button>
                 <button class="qr-mode-btn" id="zipChooseArchiveBtn" type="button">
                     <span class="mode-icon" aria-hidden="true">
                         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
                     </span>
-                    <span>
-                        Send as ZIP
-                        <small>Files are packaged into one .zip archive (default: webdrop-files.zip).</small>
-                    </span>
+                    <span>Send as ZIP<small>Package all files into one .zip archive.</small></span>
                 </button>
             </div>
-            <div class="zip-status" id="zipStatus"></div>
             <div class="qr-actions">
-                <button class="qr-toggle-btn" id="zipCancelBtn" type="button">
-                    <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                    <span>Cancel</span>
-                </button>
+                <button class="qr-toggle-btn" id="zipCancelBtn" type="button">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- ============ CDN libraries ============ -->
-    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+    <!-- CDN libraries: QR generation + scanning only. JSZip is lazy-loaded by zip.js. -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-    <!--
-        ============================================================================
-        SECURITY NOTICE
-        This file contains NO API keys, NO secrets, NO credentials.
-        All database access happens server-side in /api/session,
-        handled by functions/api/session.js using Cloudflare environment
-        variables (POSTBASE_URL, POSTBASE_ANON_KEY, POSTBASE_PROJECT_ID).
-        The session endpoint contract is preserved:
-          POST { op:"create",  id }   -> insert pending session
-          POST { op:"connect", id }   -> mark session connected
-          GET  ?id=<sessionId>        -> read session row
-        ============================================================================
-    -->
-    <script src="js/app.js" defer></script>
+    <!-- Main app (ES module) -->
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>
