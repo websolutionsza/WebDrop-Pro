@@ -1677,3 +1677,180 @@ input, select, textarea {
     animation: spin 2s linear infinite !important;
   }
 }
+
+/* ---------- 24. New components: connection type, progress, manual entry, TipNest ---------- */
+
+/* Connection type indicator */
+.connection-type {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+  min-height: 1.2em;
+  margin-top: 4px;
+}
+.connection-type[data-type="local"]  { color: var(--success); }
+.connection-type[data-type="direct"] { color: var(--accent); }
+.connection-type[data-type="turn"]   { color: var(--warning); }
+.peer-badge .connection-type {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Manual code entry row */
+.manual-entry {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.manual-entry input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: border-color var(--transition);
+}
+.manual-entry input::placeholder {
+  font-family: var(--font-sans);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+.manual-entry input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* Transfer progress bar */
+.transfer-progress-container {
+  margin-bottom: 16px;
+  padding: 14px 18px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.transfer-progress-filename {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.transfer-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-input);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.transfer-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 200ms ease;
+}
+.transfer-progress-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  font-family: var(--font-mono);
+}
+
+/* TipNest support button (footer) */
+.tipnest-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.tipnest-btn:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+.tipnest-btn .heart {
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+/* QR code session code display (below the QR image) */
+.qr-code-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+
+/* QR scanner video container */
+#qrScannerVideo {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: #000;
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#qrScannerVideo video {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+#qrScannerVideo:not(:has(video))::before {
+  content: "Camera will appear here.";
+  color: #94a3b8;
+  font-size: 0.85rem;
+  padding: 60px 20px;
+}
+
+/* Drop zone inside the transfer area (visible only when connected) */
+.transfer-area .drop-zone {
+  margin-bottom: 16px;
+}
+
+/* Peer badge in transfer area */
+.peer-info .peer-badge {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.peer-info .peer-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+/* Responsive adjustments for new components */
+@media (max-width: 460px) {
+  .manual-entry {
+    flex-direction: column;
+  }
+  .manual-entry .btn {
+    width: 100%;
+  }
+  .qr-code-display {
+    font-size: 0.95rem;
+    padding: 6px 10px;
+  }
+}
