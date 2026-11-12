@@ -173,6 +173,9 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  /* Safety net: never allow horizontal page scroll, even if a child miscalculates.
+     This does NOT hide content vertically — pages still scroll naturally. */
+  overflow-x: hidden;
 }
 
 body {
@@ -180,7 +183,7 @@ body {
   background: var(--bg-page);
   color: var(--text-primary);
   line-height: 1.5;
-  font-size: 16px;
+  font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1rem);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -195,6 +198,7 @@ body {
   /* iOS safe-area */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
+  overflow-x: hidden;
 }
 
 [data-theme="dark"] body {
@@ -254,6 +258,41 @@ input {
   color: var(--c-ink);
 }
 
+/* Subtle themed scrollbar — complements the dark interface without
+   looking out of place on iOS Safari (which ignores this entirely)
+   or Android Chrome. Works in WebKit (Chrome/Safari/Edge) and
+   Firefox. Never hides the scrollbar — pages remain naturally scrollable. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-glow) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--accent-glow);
+  border-radius: var(--radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+  background-clip: padding-box;
+}
+/* Scrollbars inside modal lists (diagnostics, file tray) get a slightly
+   narrower bar so they don't dominate small panels. */
+.diagnostics-list::-webkit-scrollbar,
+.file-tray-items::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar,
+.qr-modal::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
 .svg-icon {
   width: 18px;
   height: 18px;
@@ -276,18 +315,23 @@ input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 18px;
+  gap: 8px;
+  padding: 0 clamp(10px, 2vw, 18px);
   position: sticky;
   top: 0;
   z-index: 50;
   border-bottom: 3px solid var(--c-lime);
+  /* Prevent the header from ever triggering horizontal page scroll */
+  overflow: hidden;
+  min-width: 0;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: clamp(8px, 1.5vw, 12px);
   min-width: 0;
+  flex: 0 1 auto;
 }
 
 .header-logo-btn {
@@ -299,12 +343,19 @@ input {
   background: none;
   border-radius: var(--radius-sm);
   transition: transform var(--transition-snap), background var(--transition);
+  flex-shrink: 0;
+  /* Make it clear this is a button, not just a static logo */
+  cursor: pointer;
 }
 .header-logo-btn:hover { background: var(--header-hover-bg); transform: rotate(-6deg); }
 .header-logo-btn:active { transform: scale(0.94); }
+.header-logo-btn:focus-visible {
+  outline: 2px solid var(--c-lime);
+  outline-offset: 2px;
+}
 .header-logo {
-  width: 38px;
-  height: 38px;
+  width: clamp(30px, 7vw, 38px);
+  height: clamp(30px, 7vw, 38px);
   object-fit: contain;
   border-radius: var(--radius-sm);
 }
@@ -313,35 +364,47 @@ input {
   display: flex;
   flex-direction: column;
   line-height: 1.05;
+  min-width: 0;
+  /* Allow the title to truncate on very narrow screens instead of pushing
+     the controls off-screen. */
+  overflow: hidden;
 }
 .header-title strong {
-  font-size: 1.05rem;
+  font-size: clamp(0.9rem, 0.85rem + 0.5vw, 1.05rem);
   font-weight: 800;
   letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .header-title small {
-  font-size: 0.66rem;
+  font-size: clamp(0.6rem, 0.55rem + 0.2vw, 0.66rem);
   color: var(--header-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .header-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 #deviceNameInput {
   background: var(--header-input-bg);
   border: 2px solid var(--header-input-bd);
   color: var(--header-text);
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+  font-size: clamp(0.72rem, 0.7rem + 0.15vw, 0.85rem);
   font-weight: 600;
-  width: 140px;
+  /* Use a flexible width so it shrinks gracefully on narrow screens instead
+     of overflowing the header. */
+  width: clamp(90px, 22vw, 140px);
+  min-width: 0;
   transition: border-color var(--transition), background var(--transition);
 }
 #deviceNameInput:hover { border-color: var(--header-input-bd-hover); }
@@ -355,13 +418,14 @@ input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: clamp(32px, 8vw, 36px);
+  height: clamp(32px, 8vw, 36px);
   border-radius: var(--radius-sm);
   color: var(--header-text);
   background: var(--header-input-bg);
   border: 2px solid var(--header-input-bd);
   transition: border-color var(--transition), background var(--transition), transform var(--transition-snap);
+  flex-shrink: 0;
 }
 .icon-btn:hover {
   border-color: var(--header-input-bd-hover);
@@ -379,10 +443,11 @@ input {
   width: 100%;
   max-width: var(--content-max);
   margin: 0 auto;
-  padding: 22px 18px 60px;
+  padding: clamp(14px, 2.5vw, 22px) clamp(12px, 2.5vw, 18px) 60px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: clamp(14px, 2vw, 22px);
+  min-width: 0;
 }
 
 /* ---------- 6. ID Card ---------- */
@@ -390,14 +455,15 @@ input {
   background: var(--bg-surface);
   border: 2.5px solid var(--border-strong);
   border-radius: var(--radius-lg);
-  padding: 16px 18px;
+  padding: clamp(12px, 2vw, 16px) clamp(14px, 2.5vw, 18px);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: clamp(10px, 2vw, 14px);
   box-shadow: var(--shadow-hard);
   position: relative;
   overflow: hidden;
+  min-width: 0;
 }
 .id-card::before {
   content: "";
@@ -415,12 +481,13 @@ input {
 .id-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: clamp(10px, 1.8vw, 12px);
   min-width: 0;
+  flex: 1 1 auto;
 }
 .avatar {
-  width: 48px;
-  height: 48px;
+  width: clamp(40px, 10vw, 48px);
+  height: clamp(40px, 10vw, 48px);
   border-radius: var(--radius-md);
   background: var(--c-violet);
   color: #fff;
@@ -428,13 +495,13 @@ input {
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 1.05rem;
+  font-size: clamp(0.9rem, 0.85rem + 0.3vw, 1.05rem);
   border: 2.5px solid var(--border-strong);
   box-shadow: var(--shadow-hard-sm);
   flex-shrink: 0;
 }
 .id-text-label {
-  font-size: 0.7rem;
+  font-size: clamp(0.62rem, 0.58rem + 0.2vw, 0.7rem);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-muted);
@@ -444,12 +511,16 @@ input {
   display: flex;
   align-items: baseline;
   gap: 6px;
+  min-width: 0;
 }
 .id-value {
-  font-size: 1.15rem;
+  font-size: clamp(1rem, 0.95rem + 0.3vw, 1.15rem);
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .status-badge {
@@ -725,23 +796,29 @@ input {
   border-radius: var(--radius);
   padding: 4px;
   box-shadow: var(--shadow-hard-sm);
+  min-width: 0;
 }
 .mode-btn {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px 12px;
+  padding: clamp(8px, 1.5vw, 10px) clamp(8px, 2vw, 12px);
   border-radius: var(--radius-sm);
   font-weight: 800;
-  font-size: 0.85rem;
+  font-size: clamp(0.75rem, 0.72rem + 0.2vw, 0.85rem);
   border: none;
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--transition-snap);
   letter-spacing: -0.01em;
+  /* Allow long labels to truncate rather than push siblings out */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .mode-btn:hover {
   background: var(--bg-soft);
@@ -753,25 +830,27 @@ input {
   box-shadow: var(--shadow-hard-sm);
 }
 .mode-btn.active .svg-icon { color: var(--c-lime); }
-.mode-btn .svg-icon { color: var(--text-muted); transition: color var(--transition); }
+.mode-btn .svg-icon { color: var(--text-muted); transition: color var(--transition); flex-shrink: 0; }
 .mode-btn:hover .svg-icon { color: var(--text-primary); }
 
 /* ---------- 7c. Easy P2P panel ---------- */
 .easy-p2p-panel {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: clamp(14px, 2vw, 18px);
+  min-width: 0;
 }
 
 .code-share-card {
   background: var(--bg-surface);
   border: 2.5px solid var(--border-strong);
   border-radius: var(--radius-lg);
-  padding: 22px 20px;
+  padding: clamp(18px, 2.5vw, 22px) clamp(14px, 2.5vw, 20px);
   box-shadow: var(--shadow-hard);
   text-align: center;
   position: relative;
   overflow: hidden;
+  min-width: 0;
 }
 .code-share-card::before {
   content: "";
@@ -785,7 +864,7 @@ input {
 }
 
 .card-label {
-  font-size: 0.7rem;
+  font-size: clamp(0.62rem, 0.58rem + 0.2vw, 0.7rem);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-muted);
@@ -799,7 +878,7 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: clamp(8px, 1.5vw, 12px);
   margin-bottom: 16px;
   position: relative;
   z-index: 1;
@@ -808,22 +887,25 @@ input {
 
 .code-display {
   font-family: var(--font-mono);
-  font-size: 2.8rem;
+  font-size: clamp(2rem, 8vw, 2.8rem);
   font-weight: 800;
-  letter-spacing: 0.15em;
+  letter-spacing: clamp(0.1em, 3vw, 0.15em);
   color: var(--c-violet);
   background: var(--accent-soft);
   border: 2.5px solid var(--c-violet);
   border-radius: var(--radius);
-  padding: 8px 20px;
+  padding: clamp(6px, 1vw, 8px) clamp(14px, 3vw, 20px);
   box-shadow: var(--shadow-hard-sm);
   line-height: 1.2;
+  /* The 4-digit code itself never wraps or shrinks — it's the visual anchor */
+  flex-shrink: 0;
 }
 
 .copy-code-btn {
-  padding: 8px 14px !important;
-  font-size: 0.8rem !important;
+  padding: clamp(6px, 1vw, 8px) clamp(10px, 2vw, 14px) !important;
+  font-size: clamp(0.72rem, 0.68rem + 0.15vw, 0.8rem) !important;
   box-shadow: var(--shadow-hard-sm) !important;
+  flex-shrink: 0;
 }
 
 .qr-inline {
@@ -836,16 +918,23 @@ input {
   box-shadow: var(--shadow-hard-sm);
   margin: 0 auto;
   min-height: 0;
+  /* QR codes are always square and always exactly 200px so they remain
+     scannable. They're small enough to fit even on a 320px screen with
+     room to spare. */
+  width: fit-content;
+  max-width: 100%;
 }
 .qr-inline:empty { display: none; }
 .qr-inline img, .qr-inline canvas {
   display: block;
   margin: 0 auto;
+  max-width: 100%;
+  height: auto;
 }
 
 .code-hint {
   margin-top: 12px;
-  font-size: 0.78rem;
+  font-size: clamp(0.72rem, 0.68rem + 0.15vw, 0.78rem);
   color: var(--text-muted);
   font-weight: 600;
   position: relative;
@@ -856,29 +945,38 @@ input {
   background: var(--bg-surface);
   border: 2.5px solid var(--border-strong);
   border-radius: var(--radius-lg);
-  padding: 18px 20px;
+  padding: clamp(14px, 2vw, 18px) clamp(14px, 2.5vw, 20px);
   box-shadow: var(--shadow-hard);
+  min-width: 0;
 }
 
+/* The 4-digit code entry row. On wide screens, input + Connect button sit
+   side-by-side. On phones they stack vertically so the Connect button is
+   always fully visible and comfortably tappable. */
 .short-code-entry {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: clamp(6px, 1.2vw, 8px);
   margin-bottom: 10px;
+  min-width: 0;
 }
 #shortCodeInput {
-  flex: 1;
-  padding: 14px 16px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: clamp(12px, 2vw, 14px) clamp(12px, 2.5vw, 16px);
   border: 2.5px solid var(--border-strong);
   border-radius: var(--radius);
-  font-size: 1.5rem;
+  font-size: clamp(1.3rem, 6vw, 1.5rem);
   font-weight: 800;
   font-family: var(--font-mono);
-  letter-spacing: 0.3em;
+  letter-spacing: clamp(0.2em, 6vw, 0.3em);
   text-align: center;
   background: var(--bg-input);
   color: var(--text-primary);
   transition: border-color var(--transition), box-shadow var(--transition);
   -moz-appearance: textfield;
+  appearance: textfield;
+  width: 100%;
 }
 #shortCodeInput::-webkit-outer-spin-button,
 #shortCodeInput::-webkit-inner-spin-button {
@@ -888,12 +986,31 @@ input {
 #shortCodeInput::placeholder {
   color: var(--text-muted);
   opacity: 0.4;
-  letter-spacing: 0.3em;
+  letter-spacing: clamp(0.2em, 6vw, 0.3em);
 }
 #shortCodeInput:focus {
   outline: none;
   border-color: var(--c-violet);
   box-shadow: 0 0 0 4px var(--accent-soft);
+}
+/* The Connect button — its own row by default on phones so it never overflows.
+   We use `flex-basis` instead of media queries so the layout is fluid, not
+   stepwise. */
+.short-code-entry #shortCodeJoinBtn {
+  flex: 1 1 100%;
+  white-space: nowrap;
+}
+/* On screens wider than 480px, put input + button side-by-side again. */
+@media (min-width: 480px) {
+  .short-code-entry {
+    flex-wrap: nowrap;
+  }
+  .short-code-entry #shortCodeInput {
+    flex: 1 1 0;
+  }
+  .short-code-entry #shortCodeJoinBtn {
+    flex: 0 0 auto;
+  }
 }
 
 .scan-qr-btn {
@@ -905,30 +1022,38 @@ input {
   background: var(--bg-surface);
   border: 2.5px solid var(--border-strong);
   border-radius: var(--radius-lg);
-  padding: 18px;
+  padding: clamp(14px, 2vw, 18px);
   box-shadow: var(--shadow-hard);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: clamp(10px, 1.5vw, 14px);
+  min-width: 0;
 }
 
 .connection-row {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: clamp(8px, 1.5vw, 12px);
+  min-width: 0;
 }
 .connection-row .btn {
-  flex: 1;
+  flex: 1 1 calc(50% - 6px);
+  min-width: 0;
+}
+@media (min-width: 480px) {
+  .connection-row { flex-wrap: nowrap; }
+  .connection-row .btn { flex: 1 1 0; }
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: clamp(6px, 1vw, 8px);
+  padding: clamp(10px, 1.8vw, 12px) clamp(12px, 2vw, 16px);
   border-radius: var(--radius);
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 0.82rem + 0.2vw, 0.95rem);
   letter-spacing: -0.01em;
   border: 2.5px solid var(--border-strong);
   background: var(--bg-surface);
@@ -938,6 +1063,10 @@ input {
   text-align: center;
   cursor: pointer;
   user-select: none;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .btn:hover {
   transform: translate(-1px, -1px);
@@ -986,20 +1115,36 @@ input {
 
 .manual-entry {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: clamp(6px, 1.2vw, 8px);
+  min-width: 0;
+}
+.manual-entry #manualCodeInput {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+.manual-entry #manualJoinBtn {
+  flex: 1 1 100%;
+  white-space: nowrap;
+}
+@media (min-width: 480px) {
+  .manual-entry { flex-wrap: nowrap; }
+  .manual-entry #manualCodeInput { flex: 1 1 0; }
+  .manual-entry #manualJoinBtn { flex: 0 0 auto; }
 }
 #manualCodeInput {
-  flex: 1;
-  padding: 12px 14px;
+  padding: clamp(10px, 1.8vw, 12px) clamp(12px, 2vw, 14px);
   border: 2.5px solid var(--border-strong);
   border-radius: var(--radius);
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 0.82rem + 0.15vw, 0.95rem);
   font-weight: 700;
   font-family: var(--font-mono);
   letter-spacing: 0.08em;
   background: var(--bg-input);
   color: var(--text-primary);
   transition: border-color var(--transition), box-shadow var(--transition);
+  min-width: 0;
+  width: 100%;
 }
 #manualCodeInput::placeholder { color: var(--text-muted); font-weight: 500; letter-spacing: 0; }
 #manualCodeInput:focus {
@@ -1012,7 +1157,8 @@ input {
 .transfer-area {
   display: none;
   flex-direction: column;
-  gap: 18px;
+  gap: clamp(14px, 2vw, 18px);
+  min-width: 0;
 }
 .transfer-area.active { display: flex; }
 
@@ -1020,20 +1166,23 @@ input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: clamp(8px, 1.5vw, 12px);
   background: var(--bg-surface);
   border: 2.5px solid var(--border-strong);
   border-radius: var(--radius-lg);
-  padding: 14px 16px;
+  padding: clamp(12px, 2vw, 14px) clamp(14px, 2vw, 16px);
   box-shadow: var(--shadow-hard);
+  min-width: 0;
 }
 .peer-badge {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 .peer-label {
-  font-size: 0.7rem;
+  font-size: clamp(0.62rem, 0.58rem + 0.2vw, 0.7rem);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-muted);
@@ -1041,11 +1190,18 @@ input {
 }
 .peer-badge .connection-type {
   text-align: left;
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 0.82rem + 0.2vw, 0.95rem);
   color: var(--text-primary);
   text-transform: none;
   letter-spacing: -0.01em;
   font-weight: 800;
+  /* Truncate gracefully if the connection-type text gets very long */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.peer-info .btn-danger {
+  flex-shrink: 0;
 }
 
 /* ---------- 10. Progress ---------- */
@@ -1096,16 +1252,17 @@ input {
   background: var(--bg-surface);
   border: 3px dashed var(--c-violet);
   border-radius: var(--radius-lg);
-  padding: 36px 22px;
+  padding: clamp(20px, 3vw, 36px) clamp(14px, 3vw, 22px);
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: clamp(6px, 1vw, 8px);
   cursor: pointer;
   transition: all var(--transition);
   position: relative;
   overflow: hidden;
+  min-width: 0;
 }
 .drop-zone:hover {
   border-color: var(--c-coral);
@@ -1131,8 +1288,8 @@ input {
   50% { transform: translateY(-12px); }
 }
 .drop-icon {
-  width: 80px;
-  height: 80px;
+  width: clamp(56px, 14vw, 80px);
+  height: clamp(56px, 14vw, 80px);
   border-radius: var(--radius-md);
   background: var(--accent-soft);
   color: var(--c-violet);
@@ -1142,6 +1299,7 @@ input {
   border: 2.5px solid var(--c-violet);
   margin-bottom: 4px;
   transition: all var(--transition);
+  flex-shrink: 0;
 }
 .drop-zone:hover .drop-icon {
   background: var(--c-coral);
@@ -1150,11 +1308,11 @@ input {
   transform: rotate(-8deg) scale(1.05);
 }
 .drop-zone strong {
-  font-size: 1.15rem;
+  font-size: clamp(1rem, 0.95rem + 0.4vw, 1.15rem);
   font-weight: 800;
 }
 .drop-zone span {
-  font-size: 0.85rem;
+  font-size: clamp(0.78rem, 0.74rem + 0.15vw, 0.85rem);
   color: var(--text-muted);
   max-width: 380px;
 }
@@ -1164,11 +1322,12 @@ input {
   background: var(--bg-surface);
   border: 2.5px solid var(--border-strong);
   border-radius: var(--radius-lg);
-  padding: 14px;
+  padding: clamp(12px, 2vw, 14px);
   box-shadow: var(--shadow-hard);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: clamp(10px, 1.5vw, 12px);
+  min-width: 0;
 }
 .file-tray-summary {
   font-weight: 800;
@@ -1189,17 +1348,19 @@ input {
 .file-tray-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: clamp(8px, 1.5vw, 10px);
+  padding: clamp(6px, 1vw, 8px) clamp(8px, 1.5vw, 10px);
   background: var(--bg-page);
   border: 2px solid var(--border);
   border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+  font-size: clamp(0.78rem, 0.74rem + 0.15vw, 0.85rem);
+  min-width: 0;
 }
 .file-tray-item:hover { border-color: var(--c-violet); }
-.fti-icon { color: var(--c-violet); display: inline-flex; }
+.fti-icon { color: var(--c-violet); display: inline-flex; flex-shrink: 0; }
 .fti-name {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -1207,9 +1368,10 @@ input {
 }
 .fti-size {
   color: var(--text-muted);
-  font-size: 0.75rem;
+  font-size: clamp(0.7rem, 0.66rem + 0.15vw, 0.75rem);
   font-weight: 700;
   font-family: var(--font-mono);
+  flex-shrink: 0;
 }
 .fti-remove {
   display: inline-flex;
@@ -1232,26 +1394,33 @@ input {
 .file-tray-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: clamp(6px, 1vw, 8px);
   padding-top: 4px;
   border-top: 2px dashed var(--border);
+  min-width: 0;
 }
 .file-trigger {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 10px 12px;
+  padding: clamp(8px, 1.5vw, 10px) clamp(6px, 1.2vw, 12px);
   border-radius: var(--radius-sm);
   background: var(--bg-page);
   border: 2px solid var(--border-strong);
-  font-size: 0.75rem;
+  font-size: clamp(0.7rem, 0.66rem + 0.15vw, 0.75rem);
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition);
   text-align: center;
-  min-width: 78px;
-  flex: 1;
+  /* Two per row on phones, scales up naturally with width */
+  flex: 1 1 calc(50% - 4px);
+  min-width: 0;
+  min-height: 64px;
+  justify-content: center;
+}
+@media (min-width: 480px) {
+  .file-trigger { flex: 1 1 0; min-height: 72px; }
 }
 .file-trigger:hover {
   background: var(--c-lime);
@@ -1265,6 +1434,12 @@ input {
   height: 1px;
   opacity: 0;
   pointer-events: none;
+}
+.file-trigger span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .send-selected-btn {
   flex: 1 1 100%;
@@ -1411,18 +1586,20 @@ input {
 .chat-input {
   display: flex;
   gap: 6px;
-  padding: 10px;
+  padding: clamp(8px, 1.5vw, 10px);
   background: var(--bg-surface);
   border-top: 2px solid var(--border-strong);
+  min-width: 0;
 }
 #msgInput {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   padding: 10px 12px;
   border: 2.5px solid var(--border-strong);
   border-radius: var(--radius);
   background: var(--bg-input);
   color: var(--text-primary);
-  font-size: 0.9rem;
+  font-size: clamp(0.85rem, 0.82rem + 0.15vw, 0.9rem);
   transition: border-color var(--transition);
 }
 #msgInput:focus {
@@ -1438,9 +1615,11 @@ input {
   border-radius: var(--radius);
   background: var(--bg-surface);
   color: var(--text-primary);
-  height: 44px;
+  height: clamp(40px, 9vw, 44px);
+  min-width: clamp(40px, 9vw, 44px);
   transition: all var(--transition-snap);
   box-shadow: var(--shadow-hard-sm);
+  flex-shrink: 0;
 }
 .chat-aux-btn:hover { background: var(--c-lime); color: var(--c-ink); }
 #sendBtn { background: var(--c-violet); color: #fff; }
@@ -1452,7 +1631,7 @@ input {
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border-top: 2.5px solid var(--border-strong);
-  padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
+  padding: clamp(12px, 2vw, 14px) clamp(14px, 2.5vw, 18px) calc(14px + env(safe-area-inset-bottom));
   position: relative;
   z-index: 30;
   margin-top: auto;
@@ -1462,12 +1641,13 @@ input {
   margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: center;
+  gap: clamp(6px, 1.5vw, 12px);
   flex-wrap: wrap;
+  text-align: center;
 }
 .footer-brand {
-  font-size: 0.82rem;
+  font-size: clamp(0.75rem, 0.72rem + 0.15vw, 0.82rem);
   color: var(--text-secondary);
   font-weight: 600;
 }
@@ -1475,13 +1655,20 @@ input {
 .footer-links {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: clamp(4px, 1vw, 8px);
   flex-wrap: wrap;
-  font-size: 0.8rem;
+  font-size: clamp(0.72rem, 0.7rem + 0.12vw, 0.8rem);
+  justify-content: center;
 }
 .footer-divider { color: var(--text-muted); opacity: 0.6; }
 .footer-links a { color: var(--c-violet); font-weight: 700; }
 .tipnest-btn .heart { color: var(--c-coral); }
+/* Hide the divider slash that sits next to a hidden TipNest button,
+   so we don't get a stray "/ /" in the footer. */
+.footer-links a.tipnest-btn[style*="display:none"] + .footer-divider,
+.footer-links a.tipnest-btn.hidden + .footer-divider {
+  display: none;
+}
 
 /* ---------- 15. Cookie consent ---------- */
 .cookie-consent {
@@ -1523,8 +1710,9 @@ input {
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 18px;
+  padding: clamp(12px, 3vw, 18px);
   z-index: 100;
+  overflow-y: auto;
 }
 .qr-overlay.open { display: flex; animation: fade-in 200ms ease-out; }
 @keyframes fade-in {
@@ -1535,7 +1723,7 @@ input {
   background: var(--bg-surface);
   border: 2.5px solid var(--border-strong);
   border-radius: var(--radius-xl);
-  padding: 22px;
+  padding: clamp(18px, 3vw, 22px);
   max-width: 460px;
   width: 100%;
   box-shadow: var(--shadow-hard-xl);
@@ -1543,6 +1731,7 @@ input {
   animation: modal-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
   max-height: 90vh;
   overflow-y: auto;
+  margin: auto;
 }
 @keyframes modal-in {
   from { opacity: 0; transform: translateY(20px) scale(0.96); }
@@ -1550,10 +1739,10 @@ input {
 }
 .modal-close {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 36px;
-  height: 36px;
+  top: clamp(10px, 2vw, 12px);
+  right: clamp(10px, 2vw, 12px);
+  width: clamp(32px, 8vw, 36px);
+  height: clamp(32px, 8vw, 36px);
   border-radius: var(--radius-sm);
   border: 2px solid var(--border-strong);
   background: var(--bg-surface);
@@ -1562,6 +1751,7 @@ input {
   align-items: center;
   justify-content: center;
   box-shadow: var(--shadow-hard-sm);
+  z-index: 2;
 }
 .modal-close:hover { background: var(--c-coral); color: #fff; border-color: var(--c-coral-deep); }
 .modal-close:active { transform: translate(2px, 2px); box-shadow: none; }
@@ -1569,7 +1759,7 @@ input {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 1.2rem;
+  font-size: clamp(1.05rem, 1rem + 0.5vw, 1.2rem);
   font-weight: 800;
   margin-bottom: 16px;
   padding-right: 36px;
@@ -1750,79 +1940,33 @@ input {
   line-height: 1.4;
 }
 
-/* ---------- 18. Responsive ---------- */
+/* ---------- 18. Responsive
+   Most layout decisions are now fluid via clamp() and flex-wrap, so we
+   only need a small set of explicit breakpoints for the few things that
+   genuinely need stepwise changes (header height, chat height, etc.). ---------- */
 @media (max-width: 760px) {
-  :root { --header-h: 60px; }
+  :root { --header-h: 56px; }
 
-  .header { padding: 0 12px; }
-  .header-title strong { font-size: 0.95rem; }
-  .header-title small { font-size: 0.6rem; }
-  #deviceNameInput { width: 110px; font-size: 0.78rem; padding: 6px 10px; }
-  .header-logo { width: 32px; height: 32px; }
-  .icon-btn { width: 32px; height: 32px; }
-
-  .content { padding: 16px 12px 80px; gap: 16px; }
-
-  .id-card { padding: 14px; gap: 10px; }
-  .avatar { width: 40px; height: 40px; font-size: 0.9rem; }
-  .status-badge { font-size: 0.65rem; padding: 5px 10px; }
-
-  .scanner-section { padding: 18px 16px 22px; }
-  .radar { max-width: 220px; }
-  .scanner-head h3 { font-size: 1.15rem; }
-  .scanner-state { font-size: 0.92rem; }
-
-  .connection-panel { padding: 14px; gap: 10px; }
-  .connection-row { flex-direction: row; gap: 8px; }
-  .btn { padding: 11px 12px; font-size: 0.88rem; }
-  .manual-entry { flex-direction: row; }
-  #manualCodeInput { font-size: 0.85rem; padding: 10px 12px; }
-
-  /* Easy P2P responsive */
-  .mode-btn { padding: 8px 8px; font-size: 0.78rem; gap: 4px; }
-  .mode-btn span { font-size: 0.78rem; }
-  .code-share-card { padding: 18px 14px; }
-  .code-display { font-size: 2.2rem; padding: 6px 16px; }
-  .copy-code-btn { padding: 6px 10px !important; font-size: 0.72rem !important; }
-  .copy-code-btn span { display: none; }
-  .connect-card { padding: 14px; }
-  #shortCodeInput { font-size: 1.3rem; padding: 12px 14px; letter-spacing: 0.2em; }
-  .short-code-entry .btn { padding: 12px 16px; }
-
-  .peer-info { padding: 12px; }
-  .btn-danger { padding: 7px 10px; font-size: 0.78rem; }
-
-  .drop-zone { padding: 24px 14px; }
-  .drop-icon { width: 60px; height: 60px; }
-  .drop-icon .svg-icon { width: 36px; height: 36px; }
-  .drop-zone strong { font-size: 1rem; }
-  .drop-zone span { font-size: 0.78rem; }
-
-  .file-tray { padding: 12px; }
-  .file-tray-actions { gap: 6px; }
-  .file-trigger { padding: 8px 6px; min-width: 64px; font-size: 0.7rem; }
-  .file-trigger .svg-icon { width: 18px; height: 18px; }
-
+  /* Slightly shorter chat history on phones so the input stays visible. */
   .chat-messages { height: 200px; }
-  .chat-header { padding: 10px 12px; font-size: 0.88rem; }
 
-  .footer-inner { flex-direction: column; gap: 6px; text-align: center; }
-  .footer-brand { font-size: 0.75rem; }
-  .footer-links { font-size: 0.72rem; gap: 6px; justify-content: center; }
-
-  .diagnostics-panel { top: 70px; right: 12px; left: 12px; width: auto; max-height: 60vh; }
+  /* Diagnostics panel becomes a bottom sheet on phones. */
+  .diagnostics-panel {
+    top: auto;
+    bottom: 16px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-height: 50vh;
+  }
 }
 
-@media (max-width: 420px) {
+/* Very narrow phones (iPhone SE 1st gen, small Androids). Hide the
+   header subtitle to give the title and device-name input more room. */
+@media (max-width: 380px) {
   .header-title small { display: none; }
-  .id-text-label { font-size: 0.62rem; }
-  .id-value { font-size: 1rem; }
-
-  .connection-row { flex-direction: column; }
-  .file-tray-actions .file-trigger { flex-basis: calc(50% - 4px); }
-
-  .qr-modal { padding: 18px; }
-  .modal-title { font-size: 1.05rem; }
+  /* Make sure the logo button still feels tappable. */
+  .header-logo-btn { padding: 4px; }
 }
 
 /* ---------- 19. Reduced motion ---------- */
@@ -1840,3 +1984,37 @@ input {
 /* ---------- 20. Hidden / utility ---------- */
 .hidden { display: none !important; }
 [aria-hidden="true"] { speak: none; }
+
+/* ---------- 21. Logo = forceful refresh
+   The logo button (id=logoRefreshBtn) is wired in app.js to call
+   refreshConnection() — which tears down any existing peer connection,
+   stops signaling polling, generates a fresh 4-digit code in Easy P2P
+   mode (or re-arms the polling in Cross-Network mode), and updates the
+   UI. We give it a slightly larger hit area on touch devices and a
+   subtle hover ring so users know it's interactive. ---------- */
+.header-logo-btn {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+@media (hover: hover) {
+  .header-logo-btn:hover {
+    background: var(--header-hover-bg);
+    transform: rotate(-6deg);
+  }
+}
+.header-logo-btn:active {
+  transform: scale(0.92) rotate(-12deg);
+}
+.header-logo-btn:focus-visible {
+  outline: 2px solid var(--c-lime);
+  outline-offset: 2px;
+}
+/* When the refresh is mid-flight, the logo briefly spins so the user
+   gets a clear "yes, I'm refreshing" signal — same animation as the
+   dedicated refresh button. */
+.header-logo-btn.is-loading .header-logo {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
