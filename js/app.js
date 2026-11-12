@@ -384,16 +384,16 @@ function setupConnection(remotePeerId) {
     } else if (webrtcState === 'failed') {
       setScannerState('failed');
       if (state.mode === 'easy-p2p') {
-        systemMessage('Connection failed. Try refreshing for a new code, or switch to Cross-Network mode.');
+        systemMessage('Couldn\'t connect. Hit refresh for a new code, or try Cross-Network mode.');
       } else {
-        systemMessage('Connection failed. Tap the refresh icon next to the radar to retry.');
+        systemMessage('Couldn\'t connect. Tap the refresh icon next to the radar to try again.');
       }
     } else if (webrtcState === 'reconnecting') {
       setScannerState('reconnecting');
-      systemMessage('Connection interrupted. Attempting to recover...');
+      systemMessage('Connection dropped. Trying to get it back...');
     } else if (webrtcState === 'disconnected') {
       setScannerState('disconnected');
-      systemMessage('Connection closed.');
+      systemMessage('Other device went away.');
     }
   };
 
@@ -559,7 +559,7 @@ async function startEasyP2PSession() {
     state.signaling = new SignalingClient(state.peerId, state.sessionCode);
     state.signaling.onMessage = handleSignalingMessage;
     state.signaling.onSessionError = (reason) => {
-      systemMessage('Session error: ' + reason);
+      systemMessage('Session issue: ' + reason);
       // Don't fully reset - just go back to idle so the user can retry.
       if (state.connection) { try { state.connection.close(); } catch(_){} state.connection = null; }
       state.signaling = null;
@@ -571,9 +571,9 @@ async function startEasyP2PSession() {
     setScannerState('scanning');
   } catch (e) {
     setScannerState('backendUnavailable');
-    systemMessage('Backend unavailable: ' + e.message);
+    systemMessage('Backend\'s not responding: ' + e.message);
     // If Easy P2P fails (e.g., migration not applied yet), suggest Cross-Network.
-    systemMessage('Try switching to Cross-Network mode if the problem persists.');
+    systemMessage('Try Cross-Network mode if this keeps happening.');
   }
 }
 
@@ -582,7 +582,7 @@ async function startEasyP2PSession() {
 async function joinByShortCode(input) {
   const code = cleanShortCode(input);
   if (code.length !== 4) {
-    systemMessage('Enter a valid 4-digit code.');
+    systemMessage('Code needs to be 4 digits.');
     return;
   }
 
@@ -620,7 +620,7 @@ async function joinByShortCode(input) {
     state.signaling = new SignalingClient(state.peerId, fullSessionCode);
     state.signaling.onMessage = handleSignalingMessage;
     state.signaling.onSessionError = (reason) => {
-      systemMessage('Session error: ' + reason);
+      systemMessage('Session issue: ' + reason);
       resetUI();
     };
     state.signaling.startPolling();
@@ -636,12 +636,12 @@ async function joinByShortCode(input) {
 
     showTransferUI();
     setScannerState('establishing');
-    systemMessage('Establishing secure channel...');
+    systemMessage('Connecting to the other device...');
   } catch (e) {
     setScannerState('failed');
-    systemMessage(e.message || 'Connection failed.');
+    systemMessage(e.message || 'Couldn\'t connect.');
     if (e.message && e.message.includes('Too many attempts')) {
-      systemMessage('Please wait a few minutes before trying again.');
+      systemMessage('Give it a couple of minutes before trying again.');
     }
   }
 }
@@ -671,7 +671,7 @@ function initEasyP2P() {
     if (code.length === 4) {
       joinByShortCode(code);
     } else {
-      systemMessage('Enter a 4-digit code.');
+      systemMessage('Type in a 4-digit code first.');
     }
   });
 
@@ -719,7 +719,7 @@ async function startSenderSession() {
     }
   } catch (e) {
     setScannerState('backendUnavailable');
-    systemMessage('Backend unavailable: ' + e.message);
+    systemMessage('Backend\'s not responding: ' + e.message);
     return;
   }
 
@@ -727,7 +727,7 @@ async function startSenderSession() {
   state.signaling = new SignalingClient(state.peerId, state.sessionCode);
   state.signaling.onMessage = handleSignalingMessage;
   state.signaling.onSessionError = (reason) => {
-    systemMessage('Session error: ' + reason);
+    systemMessage('Session issue: ' + reason);
     resetUI();
   };
   state.signaling.startPolling();
@@ -743,7 +743,7 @@ async function startSenderSession() {
 async function joinSession(sessionCode) {
   const code = cleanSessionCode(sessionCode);
   if (code.length !== 12) {
-    systemMessage('Invalid session code. Must be 12 characters.');
+    systemMessage('Code needs to be 12 characters.');
     return;
   }
 
@@ -773,7 +773,7 @@ async function joinSession(sessionCode) {
     state.signaling = new SignalingClient(state.peerId, code);
     state.signaling.onMessage = handleSignalingMessage;
     state.signaling.onSessionError = (reason) => {
-      systemMessage('Session error: ' + reason);
+      systemMessage('Session issue: ' + reason);
       resetUI();
     };
     state.signaling.startPolling();
@@ -789,10 +789,10 @@ async function joinSession(sessionCode) {
 
     showTransferUI();
     setScannerState('establishing');
-    systemMessage('Establishing secure channel with sender...');
+    systemMessage('Connecting to the other device...');
   } catch (e) {
     setScannerState('failed');
-    systemMessage('Join failed: ' + e.message);
+    systemMessage('Couldn\'t join: ' + e.message);
   }
 }
 
@@ -811,7 +811,7 @@ async function handleSignalingMessage(msg) {
       await state.signaling.writeMessage(remotePeerId, 'answer', JSON.stringify(answer));
       showTransferUI();
       setScannerState('establishing');
-      systemMessage('Receiver connected. Establishing secure channel...');
+      systemMessage('Other device connected. Opening secure channel...');
     }
     return;
   }
@@ -907,7 +907,7 @@ function initManualEntry() {
     if (cleanSessionCode(code).length === 12) {
       joinSession(code);
     } else {
-      systemMessage('Enter a valid 12-character code.');
+      systemMessage('That code doesn\'t look right - it should be 12 characters.');
     }
   });
   dom.manualCodeInput?.addEventListener('keydown', (e) => {
@@ -946,6 +946,10 @@ function refreshConnection() {
     btn.classList.add('is-loading');
     btn.setAttribute('aria-busy', 'true');
   }
+  // Also pulse the logo so the user sees the refresh is happening even if
+  // the dedicated refresh button is off-screen.
+  const logoBtn = dom.logoRefreshBtn;
+  if (logoBtn) logoBtn.classList.add('is-loading');
 
   try {
     // 1. Tear down the existing peer connection.
@@ -994,17 +998,18 @@ function refreshConnection() {
         btn.classList.remove('is-loading');
         btn.removeAttribute('aria-busy');
       }
+      if (logoBtn) logoBtn.classList.remove('is-loading');
       // If we were actively in a session, restart polling.
       if (state.sessionCode && state.peerId && state.role && state.mode === 'cross-network') {
         state.signaling = new SignalingClient(state.peerId, state.sessionCode);
         state.signaling.onMessage = handleSignalingMessage;
         state.signaling.onSessionError = (reason) => {
-          systemMessage('Session error: ' + reason);
+          systemMessage('Session issue: ' + reason);
           resetUI();
         };
         state.signaling.startPolling();
         setScannerState(state.role === 'sender' ? 'scanning' : 'connecting');
-        systemMessage('Connection refreshed. Waiting for peer...');
+        systemMessage('Refreshed. Waiting for the other device.');
       } else if (state.mode === 'easy-p2p') {
         // In Easy P2P mode, refresh creates a brand new session with a new
         // 4-digit code. This is the expected UX: "give me a fresh code".
@@ -1098,7 +1103,7 @@ function initFileHandling() {
     dragCounter = 0;
     dom.dropZone.classList.remove('is-dragging');
     if (!isTransferActive()) {
-      systemMessage('Connect to a peer first to drop files.');
+      systemMessage('Connect to another device first, then drop files.');
       return;
     }
     const files = await collectDroppedFiles(e.dataTransfer);
@@ -1201,7 +1206,7 @@ async function handleFiles(fileList) {
 async function sendSingleFile(file) {
   if (!state.connection) return;
   if (state.transferInProgress) {
-    systemMessage('Please wait for the current transfer to finish.');
+    systemMessage('Hang on - a transfer\'s already running.');
     return;
   }
   state.transferInProgress = true;
@@ -1222,7 +1227,7 @@ async function sendSingleFile(file) {
     }, 1500);
   } catch (e) {
     setScannerState('failed');
-    systemMessage('Error sending ' + file.name + ': ' + e.message);
+    systemMessage('Couldn\'t send ' + file.name + ': ' + e.message);
   } finally {
     state.transferInProgress = false;
     hideProgress();
@@ -1268,11 +1273,11 @@ function initZipChoice() {
     selectedFiles = [];
     renderFileTray();
     try {
-      systemMessage('Creating ZIP archive...');
+      systemMessage('Zipping files up...');
       const zipFile = await createZip(files);
       await sendSingleFile(zipFile);
     } catch (e) {
-      systemMessage('ZIP creation failed: ' + e.message);
+      systemMessage('Couldn\'t make the ZIP: ' + e.message);
     }
   });
 }
@@ -1314,11 +1319,11 @@ async function sendAsTxt() {
 // ============================================================================
 function showReceivedFile(info, blob) {
   if (info.cancelled) {
-    systemMessage('Transfer cancelled: ' + info.filename);
+    systemMessage('Cancelled: ' + info.filename);
     return;
   }
   if (!blob) {
-    systemMessage('Transfer failed: ' + info.filename);
+    systemMessage('Couldn\'t receive: ' + info.filename);
     return;
   }
   const url = URL.createObjectURL(blob);
