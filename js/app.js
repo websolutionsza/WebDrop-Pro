@@ -3,7 +3,7 @@
 // Coordinates signaling, WebRTC, QR, and ZIP modules.
 // ============================================================================
 
-import { SignalingClient, generatePeerId, generateSessionCode, formatSessionCode, cleanSessionCode } from './signaling.js';
+import { SignalingClient, generatePeerId, generateSessionCode, formatSessionCode, cleanSessionCode, generateShortCode, cleanShortCode } from './signaling.js';
 import { WebDropConnection, sha256, CHUNK_SIZE } from './webrtc.js';
 import { generateQR, buildQRPayload, QRScanner, parseQRPayload } from './qr.js';
 import { createZip } from './zip.js';
@@ -58,6 +58,8 @@ const CONNECTION_TYPE_TEXT = {
 const state = {
   peerId: null,
   sessionCode: null,
+  shortCode: null,              // 4-digit code for Easy P2P mode
+  mode: 'easy-p2p',             // 'easy-p2p' | 'cross-network'
   role: null,                 // 'sender' | 'receiver' | null
   signaling: null,            // SignalingClient instance
   connection: null,           // WebDropConnection instance
@@ -320,6 +322,12 @@ function showTransferUI() {
   dom.setupArea.style.display = 'none';
   dom.transferArea.classList.add('active');
   dom.chatBox.innerHTML = '';
+  // The QR code must disappear immediately after the connection is successful.
+  // Close the QR modal (Cross-Network mode) if it's open.
+  closeQRModal();
+  // Also clear the inline Easy P2P QR (it's inside setupArea which is now
+  // hidden, but we clear it explicitly to be safe).
+  if (dom.easyP2PQRContainer) dom.easyP2PQRContainer.innerHTML = '';
   // Don't override the connection-type badge here - the WebRTC layer will
   // fire onConnectionType once the candidate pair is selected.
 }
@@ -335,6 +343,7 @@ function resetUI() {
   }
   state.role = null;
   state.sessionCode = null;
+  state.shortCode = null;
   state.transferInProgress = false;
   dom.setupArea.style.display = 'block';
   dom.transferArea.classList.remove('active');
@@ -345,6 +354,10 @@ function resetUI() {
   // Reset file tray.
   if (dom.fileTrayItems) dom.fileTrayItems.innerHTML = '';
   if (dom.fileTraySummary) dom.fileTraySummary.style.display = 'none';
+  // Reset Easy P2P display.
+  if (dom.easyP2PCode) dom.easyP2PCode.textContent = '----';
+  if (dom.easyP2PQRContainer) dom.easyP2PQRContainer.innerHTML = '';
+  if (dom.shortCodeInput) dom.shortCodeInput.value = '';
 }
 
 // ============================================================================
@@ -366,9 +379,15 @@ function setupConnection(remotePeerId) {
       setScannerState('connected');
       // Slow down signaling polls - the DataChannel carries everything now.
       if (state.signaling) state.signaling.setSlowPolling();
+      // QR code must disappear immediately after the connection is successful.
+      closeQRModal();
     } else if (webrtcState === 'failed') {
       setScannerState('failed');
-      systemMessage('Connection failed. Tap the refresh icon next to the radar to retry.');
+      if (state.mode === 'easy-p2p') {
+        systemMessage('Connection failed. Try refreshing for a new code, or switch to Cross-Network mode.');
+      } else {
+        systemMessage('Connection failed. Tap the refresh icon next to the radar to retry.');
+      }
     } else if (webrtcState === 'reconnecting') {
       setScannerState('reconnecting');
       systemMessage('Connection interrupted. Attempting to recover...');
@@ -415,7 +434,267 @@ function setupConnection(remotePeerId) {
 }
 
 // ============================================================================
-// Sender flow: create session + show QR
+// Easy P2P mode (default) - auto-create session with 4-digit code
+// ============================================================================
+const MODE_KEY = 'webdrop-mode';
+
+function initModeToggle() {
+  // Restore saved mode preference.
+  try {
+    const saved = localStorage.getItem(MODE_KEY);
+    if (saved === 'cross-network') {
+      state.mode = 'cross-network';
+    } else {
+      state.mode = 'easy-p2p';
+    }
+  } catch (_) {
+    state.mode = 'easy-p2p';
+  }
+
+  // Apply the mode to the UI.
+  applyMode(state.mode);
+
+  // Wire up the mode toggle buttons.
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newMode = btn.dataset.mode;
+      if (newMode === state.mode) return;
+      switchMode(newMode);
+    });
+  });
+}
+
+function applyMode(mode) {
+  state.mode = mode;
+  document.body.dataset.mode = mode;
+
+  // Update toggle button states.
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    const active = btn.dataset.mode === mode;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+
+  // Show/hide the appropriate panel.
+  if (dom.easyP2PPanel) {
+    dom.easyP2PPanel.style.display = mode === 'easy-p2p' ? '' : 'none';
+  }
+  if (dom.crossNetworkPanel) {
+    dom.crossNetworkPanel.style.display = mode === 'cross-network' ? '' : 'none';
+  }
+}
+
+function switchMode(newMode) {
+  if (state.mode === newMode) return;
+
+  // Warn if a transfer is in progress.
+  if (state.transferInProgress) {
+    if (!window.confirm('A file transfer is in progress. Switch modes anyway? The transfer will be cancelled.')) {
+      return;
+    }
+  }
+
+  // Tear down any existing session.
+  resetUI();
+
+  // Save and apply the new mode.
+  state.mode = newMode;
+  try { localStorage.setItem(MODE_KEY, newMode); } catch (_) {}
+  applyMode(newMode);
+
+  // Auto-start the Easy P2P session if switching to easy-p2p mode.
+  if (newMode === 'easy-p2p') {
+    startEasyP2PSession();
+  } else {
+    setScannerState('idle');
+  }
+}
+
+// Auto-start an Easy P2P session on page load. Generates a 4-digit code
+// and a QR code automatically so the user can share immediately.
+async function startEasyP2PSession() {
+  // Don't auto-start if we're joining via URL (?join=CODE).
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('join')) return;
+
+  state.peerId = state.peerId || generatePeerId();
+  state.sessionCode = generateSessionCode(); // 12-char internal session_code
+  state.shortCode = null;
+  state.role = 'sender';
+
+  setScannerState('initializing');
+
+  // Show placeholder while we wait for the backend.
+  if (dom.easyP2PCode) dom.easyP2PCode.textContent = '----';
+  if (dom.easyP2PQRContainer) dom.easyP2PQRContainer.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/session/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_code: state.sessionCode,
+        creator_peer_id: state.peerId,
+        mode: 'easy-p2p'
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to create session');
+    }
+    state.shortCode = data.short_code;
+    state.sessionCode = data.session_code || state.sessionCode;
+
+    // Display the 4-digit code.
+    if (dom.easyP2PCode) dom.easyP2PCode.textContent = state.shortCode;
+
+    // Generate and display the QR code inline.
+    if (dom.easyP2PQRContainer) {
+      const baseUrl = window.location.origin;
+      const payload = buildQRPayload(state.sessionCode, baseUrl);
+      generateQR(payload, dom.easyP2PQRContainer);
+    }
+
+    // Set up signaling client + start polling.
+    state.signaling = new SignalingClient(state.peerId, state.sessionCode);
+    state.signaling.onMessage = handleSignalingMessage;
+    state.signaling.onSessionError = (reason) => {
+      systemMessage('Session error: ' + reason);
+      // Don't fully reset - just go back to idle so the user can retry.
+      if (state.connection) { try { state.connection.close(); } catch(_){} state.connection = null; }
+      state.signaling = null;
+      state.role = null;
+      setScannerState('failed');
+    };
+    state.signaling.startPolling();
+
+    setScannerState('scanning');
+  } catch (e) {
+    setScannerState('backendUnavailable');
+    systemMessage('Backend unavailable: ' + e.message);
+    // If Easy P2P fails (e.g., migration not applied yet), suggest Cross-Network.
+    systemMessage('Try switching to Cross-Network mode if the problem persists.');
+  }
+}
+
+// Join a session using a 4-digit Easy P2P short code.
+// Looks up the full session_code via /api/session/lookup, then joins.
+async function joinByShortCode(input) {
+  const code = cleanShortCode(input);
+  if (code.length !== 4) {
+    systemMessage('Enter a valid 4-digit code.');
+    return;
+  }
+
+  state.peerId = state.peerId || generatePeerId();
+  state.role = 'receiver';
+  setScannerState('connecting');
+
+  try {
+    // Step 1: Resolve the 4-digit code to a full session_code.
+    const res = await fetch(`/api/session/lookup?code=${code}`);
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Code not found');
+    }
+    const fullSessionCode = data.session_code;
+    state.sessionCode = fullSessionCode;
+    state.shortCode = code;
+
+    // Step 2: Join the session (same flow as Cross-Network join).
+    const joinRes = await fetch('/api/session/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_code: fullSessionCode,
+        joiner_peer_id: state.peerId
+      })
+    });
+    const joinData = await joinRes.json();
+    if (!joinRes.ok) {
+      throw new Error(joinData.error || 'Failed to join session');
+    }
+    const creatorPeerId = joinData.creator_peer_id;
+
+    // Step 3: Set up signaling + WebRTC.
+    state.signaling = new SignalingClient(state.peerId, fullSessionCode);
+    state.signaling.onMessage = handleSignalingMessage;
+    state.signaling.onSessionError = (reason) => {
+      systemMessage('Session error: ' + reason);
+      resetUI();
+    };
+    state.signaling.startPolling();
+
+    setScannerState('negotiating');
+
+    // Create the WebRTC connection + offer.
+    const conn = setupConnection(creatorPeerId);
+    const offer = await conn.createOffer();
+
+    // Send the offer to the creator via signaling.
+    await state.signaling.writeMessage(creatorPeerId, 'offer', JSON.stringify(offer));
+
+    showTransferUI();
+    setScannerState('establishing');
+    systemMessage('Establishing secure channel...');
+  } catch (e) {
+    setScannerState('failed');
+    systemMessage(e.message || 'Connection failed.');
+    if (e.message && e.message.includes('Too many attempts')) {
+      systemMessage('Please wait a few minutes before trying again.');
+    }
+  }
+}
+
+function initEasyP2P() {
+  // 4-digit code input: auto-advance, numeric only, join on Enter.
+  if (dom.shortCodeInput) {
+    dom.shortCodeInput.addEventListener('input', (e) => {
+      const cleaned = cleanShortCode(e.target.value);
+      e.target.value = cleaned;
+      // Auto-join when 4 digits are entered.
+      if (cleaned.length === 4) {
+        joinByShortCode(cleaned);
+      }
+    });
+    dom.shortCodeInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const code = cleanShortCode(dom.shortCodeInput.value);
+        if (code.length === 4) joinByShortCode(code);
+      }
+    });
+  }
+
+  // Connect button.
+  dom.shortCodeJoinBtn?.addEventListener('click', () => {
+    const code = cleanShortCode(dom.shortCodeInput?.value);
+    if (code.length === 4) {
+      joinByShortCode(code);
+    } else {
+      systemMessage('Enter a 4-digit code.');
+    }
+  });
+
+  // Scan QR button (Easy P2P mode) - opens the same scanner modal.
+  dom.easyScanBtn?.addEventListener('click', openScanner);
+
+  // Copy 4-digit code button.
+  dom.copyEasyP2PCodeBtn?.addEventListener('click', () => {
+    if (state.shortCode) {
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(state.shortCode).then(() => {
+          dom.copyEasyP2PCodeBtn.innerHTML = ICONS.check + ' Copied';
+          setTimeout(() => {
+            dom.copyEasyP2PCodeBtn.innerHTML = ICONS.copy + ' Copy Code';
+          }, 1500);
+        });
+      }
+    }
+  });
+}
+
+// ============================================================================
+// Sender flow: create session + show QR (Cross-Network mode)
 // ============================================================================
 async function startSenderSession() {
   state.peerId = state.peerId || generatePeerId();
@@ -716,7 +995,7 @@ function refreshConnection() {
         btn.removeAttribute('aria-busy');
       }
       // If we were actively in a session, restart polling.
-      if (state.sessionCode && state.peerId && state.role) {
+      if (state.sessionCode && state.peerId && state.role && state.mode === 'cross-network') {
         state.signaling = new SignalingClient(state.peerId, state.sessionCode);
         state.signaling.onMessage = handleSignalingMessage;
         state.signaling.onSessionError = (reason) => {
@@ -726,6 +1005,10 @@ function refreshConnection() {
         state.signaling.startPolling();
         setScannerState(state.role === 'sender' ? 'scanning' : 'connecting');
         systemMessage('Connection refreshed. Waiting for peer...');
+      } else if (state.mode === 'easy-p2p') {
+        // In Easy P2P mode, refresh creates a brand new session with a new
+        // 4-digit code. This is the expected UX: "give me a fresh code".
+        startEasyP2PSession();
       } else {
         setScannerState('idle');
       }
@@ -1230,7 +1513,16 @@ function collectDomRefs() {
     diagnosticsPanel: document.getElementById('diagnosticsPanel'),
     diagnosticsClose: document.getElementById('diagnosticsClose'),
     diagnosticsList: document.getElementById('diagnosticsList'),
-    logoRefreshBtn: document.getElementById('logoRefreshBtn')
+    logoRefreshBtn: document.getElementById('logoRefreshBtn'),
+    // Easy P2P mode elements
+    easyP2PPanel: document.getElementById('easyP2PPanel'),
+    crossNetworkPanel: document.getElementById('crossNetworkPanel'),
+    easyP2PCode: document.getElementById('easyP2PCode'),
+    easyP2PQRContainer: document.getElementById('easyP2PQRContainer'),
+    copyEasyP2PCodeBtn: document.getElementById('copyEasyP2PCodeBtn'),
+    shortCodeInput: document.getElementById('shortCodeInput'),
+    shortCodeJoinBtn: document.getElementById('shortCodeJoinBtn'),
+    easyScanBtn: document.getElementById('easyScanBtn')
   };
   dom.zipChoiceFiles = null;
 }
@@ -1253,6 +1545,8 @@ function init() {
   initTipNest();
   initRefreshButton();
   initDiagnosticsPanel();
+  initModeToggle();
+  initEasyP2P();
 
   // Logo click triggers refresh too (the original behaviour - we keep it).
   dom.logoRefreshBtn?.addEventListener('click', refreshConnection);
@@ -1261,7 +1555,27 @@ function init() {
   loadIceServers();
   checkBackendHealth();
 
-  setScannerState('idle');
+  // Check URL for ?join=CODE (receiver flow via link).
+  // This works for both Easy P2P and Cross-Network modes since the QR
+  // always encodes the full 12-char session_code.
+  const params = new URLSearchParams(window.location.search);
+  const joinCode = params.get('join');
+  if (joinCode && cleanSessionCode(joinCode).length === 12) {
+    // Switch to cross-network mode for URL-based joins (the QR encodes the
+    // full 12-char code, so we use the existing join flow).
+    if (state.mode !== 'cross-network') {
+      applyMode('cross-network');
+    }
+    joinSession(joinCode);
+  } else {
+    // Auto-start Easy P2P session on page load (default mode).
+    if (state.mode === 'easy-p2p') {
+      startEasyP2PSession();
+    } else {
+      setScannerState('idle');
+    }
+  }
+
   setConnectionType('none');
 }
 

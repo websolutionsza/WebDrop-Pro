@@ -172,4 +172,21 @@ function cleanSessionCode(input) {
   return String(input || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
 }
 
-export { SignalingClient, generatePeerId, generateSessionCode, formatSessionCode, cleanSessionCode };
+// Helper: generate a random 4-digit numeric short code for Easy P2P mode.
+function generateShortCode() {
+  const digits = '0123456789';
+  const values = new Uint8Array(4);
+  crypto.getRandomValues(values);
+  let out = '';
+  for (let i = 0; i < 4; i++) {
+    out += digits[values[i] % digits.length];
+  }
+  return out;
+}
+
+// Strip non-digits from a manually entered short code.
+function cleanShortCode(input) {
+  return String(input || '').replace(/[^0-9]/g, '').slice(0, 4);
+}
+
+export { SignalingClient, generatePeerId, generateSessionCode, formatSessionCode, cleanSessionCode, generateShortCode, cleanShortCode };
