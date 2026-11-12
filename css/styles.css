@@ -716,6 +716,190 @@ input {
 .connection-type[data-type="direct"] { color: var(--c-blue); }
 .connection-type[data-type="turn"] { color: var(--c-violet); }
 
+/* ---------- 7b. Mode toggle ---------- */
+.mode-toggle {
+  display: flex;
+  gap: 0;
+  background: var(--bg-surface);
+  border: 2.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 4px;
+  box-shadow: var(--shadow-hard-sm);
+}
+.mode-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+  font-size: 0.85rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-snap);
+  letter-spacing: -0.01em;
+}
+.mode-btn:hover {
+  background: var(--bg-soft);
+  color: var(--text-primary);
+}
+.mode-btn.active {
+  background: var(--c-violet);
+  color: #fff;
+  box-shadow: var(--shadow-hard-sm);
+}
+.mode-btn.active .svg-icon { color: var(--c-lime); }
+.mode-btn .svg-icon { color: var(--text-muted); transition: color var(--transition); }
+.mode-btn:hover .svg-icon { color: var(--text-primary); }
+
+/* ---------- 7c. Easy P2P panel ---------- */
+.easy-p2p-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.code-share-card {
+  background: var(--bg-surface);
+  border: 2.5px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 22px 20px;
+  box-shadow: var(--shadow-hard);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.code-share-card::before {
+  content: "";
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 110px; height: 110px;
+  background: var(--c-coral);
+  border-radius: 50%;
+  opacity: 0.10;
+  pointer-events: none;
+}
+
+.card-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.code-display-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+}
+
+.code-display {
+  font-family: var(--font-mono);
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--c-violet);
+  background: var(--accent-soft);
+  border: 2.5px solid var(--c-violet);
+  border-radius: var(--radius);
+  padding: 8px 20px;
+  box-shadow: var(--shadow-hard-sm);
+  line-height: 1.2;
+}
+
+.copy-code-btn {
+  padding: 8px 14px !important;
+  font-size: 0.8rem !important;
+  box-shadow: var(--shadow-hard-sm) !important;
+}
+
+.qr-inline {
+  display: inline-flex;
+  justify-content: center;
+  padding: 10px;
+  background: #fff;
+  border: 2.5px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-hard-sm);
+  margin: 0 auto;
+  min-height: 0;
+}
+.qr-inline:empty { display: none; }
+.qr-inline img, .qr-inline canvas {
+  display: block;
+  margin: 0 auto;
+}
+
+.code-hint {
+  margin-top: 12px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+}
+
+.connect-card {
+  background: var(--bg-surface);
+  border: 2.5px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-hard);
+}
+
+.short-code-entry {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+#shortCodeInput {
+  flex: 1;
+  padding: 14px 16px;
+  border: 2.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  letter-spacing: 0.3em;
+  text-align: center;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  -moz-appearance: textfield;
+}
+#shortCodeInput::-webkit-outer-spin-button,
+#shortCodeInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+#shortCodeInput::placeholder {
+  color: var(--text-muted);
+  opacity: 0.4;
+  letter-spacing: 0.3em;
+}
+#shortCodeInput:focus {
+  outline: none;
+  border-color: var(--c-violet);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.scan-qr-btn {
+  width: 100%;
+}
+
 /* ---------- 8. Connection Panel ---------- */
 .connection-panel {
   background: var(--bg-surface);
@@ -1593,6 +1777,17 @@ input {
   .btn { padding: 11px 12px; font-size: 0.88rem; }
   .manual-entry { flex-direction: row; }
   #manualCodeInput { font-size: 0.85rem; padding: 10px 12px; }
+
+  /* Easy P2P responsive */
+  .mode-btn { padding: 8px 8px; font-size: 0.78rem; gap: 4px; }
+  .mode-btn span { font-size: 0.78rem; }
+  .code-share-card { padding: 18px 14px; }
+  .code-display { font-size: 2.2rem; padding: 6px 16px; }
+  .copy-code-btn { padding: 6px 10px !important; font-size: 0.72rem !important; }
+  .copy-code-btn span { display: none; }
+  .connect-card { padding: 14px; }
+  #shortCodeInput { font-size: 1.3rem; padding: 12px 14px; letter-spacing: 0.2em; }
+  .short-code-entry .btn { padding: 12px 16px; }
 
   .peer-info { padding: 12px; }
   .btn-danger { padding: 7px 10px; font-size: 0.78rem; }
