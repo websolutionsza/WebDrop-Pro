@@ -1,0 +1,36 @@
+# robots.txt for WebDrop Pro
+# https://webdrop-pro.pages.dev/
+#
+# Public marketing pages are fully crawlable. Private application
+# endpoints (session coordination, signaling, TURN credentials) are
+# disallowed because they are not meant to be indexed.
+
+User-agent: *
+Allow: /
+Allow: /css/
+Allow: /js/
+Allow: /favicon-16x16.png
+Allow: /favicon-32x32.png
+Allow: /favicon-48x48.png
+Allow: /web%20drop%20192.png
+
+# Disallow dynamic / API routes - these are not public content.
+Disallow: /api/
+Disallow: /?join=
+Disallow: /functions/
+
+# Block known AI training crawlers that ignore the llms.txt standard.
+# These vendors have their own opt-out mechanisms - keep this list
+# focused on tools that scrape without consent.
+# (Commented out by default - uncomment if you do not want AI training.)
+# User-agent: GPTBot
+# Disallow: /
+# User-agent: CCBot
+# Disallow: /
+# User-agent: anthropic-ai
+# Disallow: /
+# User-agent: ClaudeBot
+# Disallow: /
+
+# Sitemap location
+Sitemap: https://webdrop-pro.pages.dev/sitemap.xml

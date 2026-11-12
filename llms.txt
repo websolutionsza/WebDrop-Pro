@@ -1,0 +1,52 @@
+# WebDrop Pro
+
+> WebDrop Pro is a free, secure peer-to-peer file transfer tool that runs entirely in the browser. Send documents, photos, videos and folders directly between two devices using WebRTC. No accounts. No uploads to a server. No file-size limits.
+
+## Official URL
+- https://webdrop-pro.pages.dev/
+
+## What WebDrop Pro does
+
+WebDrop Pro lets two devices exchange files directly with each other over a peer-to-peer WebRTC connection. Files never pass through or are stored on a third-party server. The encrypted data channel means a sender's files go straight to the receiver.
+
+## Main capabilities
+
+- Peer-to-peer file transfer using WebRTC (no server-side file storage)
+- Encrypted DataChannel (DTLS over ICE)
+- QR code and 12-character session code pairing between devices
+- Drag-and-drop file selection (images, documents, videos, multiple files)
+- Folder upload and ZIP archive creation for multi-file transfers
+- Secure in-session text chat between the two connected peers
+- Works across local networks (LAN) and across the internet (NAT traversal with STUN, and TURN relay fallback)
+- Automatic connection-mode detection (local / direct-internet / relay)
+- No accounts, no signup, no tracking cookies (functional storage only)
+- Mobile-first responsive interface
+
+## Publicly accessible pages
+
+- / (home / application)
+- /terms.html (Terms and Conditions)
+- /privacy.html (Privacy Policy)
+- /sitemap.xml (XML sitemap)
+- /robots.txt (crawler directives)
+- /llms.txt (this file)
+
+## Links
+
+- Application: https://webdrop-pro.pages.dev/
+- Source repository: see footer of the application
+- Developer: WebSolutionsSA - https://websolutionsza.github.io/websolutionsSA/
+
+## Architecture notes (non-sensitive)
+
+WebDrop Pro is a static front-end deployed on Cloudflare Pages with Cloudflare Pages Functions for backend coordination. The signaling layer uses a polling-based protocol over HTTPS to exchange WebRTC SDP offers / answers and ICE candidates. Session and signaling state is stored in a Neon PostgreSQL database and is automatically deleted after a short expiry window (15 minutes for sessions, 5 minutes for signaling messages, 24 hours for transfer metadata).
+
+WebRTC media / data traffic flows directly between the two browsers. TURN relay (provided by Metered) is used only when a direct peer-to-peer path cannot be established.
+
+## What WebDrop Pro does NOT do
+
+- WebDrop Pro does not store files on any server. Files travel directly between peers.
+- WebDrop Pro does not require an account.
+- WebDrop Pro does not track users or sell data.
+- WebDrop Pro does not support group transfers; it is strictly a two-device exchange.
+- WebDrop Pro does not bypass firewall, NAT or carrier restrictions on its own; it relies on standard WebRTC and TURN relay where available.
