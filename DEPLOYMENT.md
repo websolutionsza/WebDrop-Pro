@@ -30,6 +30,17 @@ This guide walks you through deploying WebDrop Pro from scratch.
 4. Click **Run**
 5. Verify 3 tables were created: `transfer_sessions`, `signaling_messages`, `transfer_history`
 
+### 1.3 Apply migration 002 (Easy P2P short codes)
+
+Migration 002 adds a `short_code` column to `transfer_sessions` and a `pairing_attempts` table for rate-limiting 4-digit code lookups. This migration is required for the Easy P2P mode (the default connection mode).
+
+1. Open `migrations/002_add_short_codes.sql` from this repo
+2. Copy the entire contents, paste into the Neon SQL Editor
+3. Click **Run**
+4. Verify: `transfer_sessions` now has a `short_code` column, and a `pairing_attempts` table exists
+
+This migration is safe to re-run (all statements use `IF NOT EXISTS`). It does not alter any existing column or remove any data.
+
 ## Step 2: Metered TURN Setup
 
 WebDrop Pro supports two credential modes for Metered TURN.

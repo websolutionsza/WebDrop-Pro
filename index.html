@@ -97,6 +97,17 @@
                     </span>
                 </div>
 
+                <div class="mode-toggle" role="tablist" aria-label="Connection mode">
+                    <button class="mode-btn active" data-mode="easy-p2p" role="tab" aria-selected="true" type="button">
+                        <svg class="svg-icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+                        <span>Easy P2P</span>
+                    </button>
+                    <button class="mode-btn" data-mode="cross-network" role="tab" aria-selected="false" type="button">
+                        <svg class="svg-icon sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        <span>Cross-Network</span>
+                    </button>
+                </div>
+
                 <section class="scanner-section" id="radarStage" data-state="idle" data-conn-type="none">
                     <div class="scanner-head">
                         <h3>Transfer</h3>
@@ -125,22 +136,53 @@
                     <p class="connection-type" id="connectionType"></p>
                 </section>
 
-                <section class="connection-panel">
-                    <div class="connection-row">
-                        <button class="btn btn-primary" id="qrOpenBtn" type="button">
-                            <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M17 21h4v-4M14 17v.01"/></svg>
-                            <span>Send Files</span>
-                        </button>
-                        <button class="btn btn-secondary" id="scanOpenBtn" type="button">
+                <!-- Easy P2P panel (default, shown on page load) -->
+                <div class="easy-p2p-panel" id="easyP2PPanel">
+                    <div class="code-share-card">
+                        <div class="card-label">Your connection code</div>
+                        <div class="code-display-wrapper">
+                            <span class="code-display" id="easyP2PCode">----</span>
+                            <button class="btn btn-secondary copy-code-btn" id="copyEasyP2PCodeBtn" type="button" aria-label="Copy code" title="Copy code">
+                                <svg class="svg-icon sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                <span>Copy Code</span>
+                            </button>
+                        </div>
+                        <div class="qr-inline" id="easyP2PQRContainer" aria-label="QR code for this session"></div>
+                        <p class="code-hint">Share this code or QR with the other device</p>
+                    </div>
+
+                    <div class="connect-card">
+                        <div class="card-label">Connect to another device</div>
+                        <div class="short-code-entry">
+                            <input type="text" id="shortCodeInput" placeholder="0000" maxlength="4" inputmode="numeric" pattern="[0-9]*" aria-label="4-digit connection code" autocomplete="off" spellcheck="false" />
+                            <button class="btn btn-primary" id="shortCodeJoinBtn" type="button">Connect</button>
+                        </div>
+                        <button class="btn btn-secondary scan-qr-btn" id="easyScanBtn" type="button">
                             <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                            <span>Scan QR</span>
+                            <span>Scan QR Code</span>
                         </button>
                     </div>
-                    <div class="manual-entry">
-                        <input type="text" id="manualCodeInput" placeholder="Enter code" maxlength="14" aria-label="Session code" autocomplete="off" spellcheck="false" />
-                        <button class="btn btn-secondary" id="manualJoinBtn" type="button">Join</button>
-                    </div>
-                </section>
+                </div>
+
+                <!-- Cross-Network panel (advanced, hidden by default) -->
+                <div class="cross-network-panel" id="crossNetworkPanel" style="display:none;">
+                    <section class="connection-panel">
+                        <div class="connection-row">
+                            <button class="btn btn-primary" id="qrOpenBtn" type="button">
+                                <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M17 21h4v-4M14 17v.01"/></svg>
+                                <span>Send Files</span>
+                            </button>
+                            <button class="btn btn-secondary" id="scanOpenBtn" type="button">
+                                <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                <span>Scan QR</span>
+                            </button>
+                        </div>
+                        <div class="manual-entry">
+                            <input type="text" id="manualCodeInput" placeholder="Enter code" maxlength="14" aria-label="Session code" autocomplete="off" spellcheck="false" />
+                            <button class="btn btn-secondary" id="manualJoinBtn" type="button">Join</button>
+                        </div>
+                    </section>
+                </div>
             </section>
 
             <section class="transfer-area" id="transferArea" aria-live="polite">
