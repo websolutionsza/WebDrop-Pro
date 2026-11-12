@@ -2,18 +2,35 @@
 // signaling.js - polling-based WebRTC signaling client
 // Talks to the /api/signaling/* Cloudflare Functions. Polls every 1 second
 // for new messages addressed to this peer during connection setup.
+//
+// IMPORTANT: messages are delivered to onMessage serially. The WebRTC
+// handshake is order-sensitive (offer must be applied before ICE candidates),
+// and the polling layer can return multiple messages per response. We
+// therefore await onMessage() for each message so that an async handler in
+// app.js can fully apply the offer before we hand it the next ICE candidate.
+// Without this, ICE candidates that arrived in the same poll batch as the
+// offer were being applied before setRemoteDescription() finished, and the
+// browser silently dropped them - the root cause of the original
+// "DataChannel timeout" bug.
 // ============================================================================
 
 class SignalingClient {
   constructor(peerId, sessionCode) {
     this.peerId = peerId;
     this.sessionCode = sessionCode;
-    this.pollIntervalMs = 1000;
+    // Adaptive polling: start fast (300ms) during setup, slow down to 1.5s
+    // once the connection is established. The signalling layer only needs
+    // to be quick during the SDP / ICE exchange - afterwards the DataChannel
+    // itself carries all traffic.
+    this.pollIntervalFastMs = 300;
+    this.pollIntervalSlowMs = 1500;
+    this.pollIntervalMs = this.pollIntervalFastMs;
     this.pollTimer = null;
     this.consumedIds = [];
-    this.onMessage = null;     // callback(message)
+    this.onMessage = null;     // async callback(message)
     this.onSessionError = null; // callback(reason)
     this.polling = false;
+    this._inflight = false;    // prevents overlapping polls
   }
 
   // Write a signaling message to the database.
@@ -53,31 +70,56 @@ class SignalingClient {
     });
   }
 
-  // Start the polling loop. Calls onMessage for each new message.
+  // Slow down polling once the WebRTC connection is established - the
+  // DataChannel carries everything from then on, so we only need the
+  // polling layer to stay alive in case of a reconnect.
+  setSlowPolling() {
+    this.pollIntervalMs = this.pollIntervalSlowMs;
+  }
+
+  // Start the polling loop. Calls onMessage for each new message, serially.
   startPolling() {
     if (this.polling) return;
     this.polling = true;
 
     const tick = async () => {
       if (!this.polling) return;
+      // Don't overlap polls - if a previous poll is still in flight, wait.
+      if (this._inflight) {
+        if (this.polling) this.pollTimer = setTimeout(tick, 200);
+        return;
+      }
+      this._inflight = true;
       try {
         const data = await this.pollOnce();
         if (!data.ok) {
           if (this.onSessionError) this.onSessionError(data.reason);
           this.stopPolling();
+          this._inflight = false;
           return;
         }
         const messages = data.messages || [];
         const idsToConsume = [];
         for (const msg of messages) {
           idsToConsume.push(msg.id);
-          if (this.onMessage) this.onMessage(msg);
+          // Await each message handler so the offer/answer handshake runs
+          // to completion before we deliver the next ICE candidate. This
+          // is the fix for the dropped-candidate race condition.
+          if (this.onMessage) {
+            try {
+              await this.onMessage(msg);
+            } catch (e) {
+              console.error('Signaling message handler error:', e.message);
+            }
+          }
         }
         // Mark consumed asynchronously - don't block the next poll.
         if (idsToConsume.length) this.markConsumed(idsToConsume);
       } catch (e) {
         console.error('Poll error:', e.message);
         // Network error - keep trying, don't stop polling.
+      } finally {
+        this._inflight = false;
       }
       if (this.polling) {
         this.pollTimer = setTimeout(tick, this.pollIntervalMs);
@@ -88,6 +130,7 @@ class SignalingClient {
 
   stopPolling() {
     this.polling = false;
+    this._inflight = false;
     if (this.pollTimer) {
       clearTimeout(this.pollTimer);
       this.pollTimer = null;
@@ -109,7 +152,7 @@ function generatePeerId() {
 
 // Helper: generate a random 12-char uppercase alphanumeric session_code.
 function generateSessionCode() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars (0,O,1,I)
   const values = new Uint8Array(12);
   crypto.getRandomValues(values);
   let out = '';

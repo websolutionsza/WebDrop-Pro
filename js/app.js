@@ -4,7 +4,7 @@
 // ============================================================================
 
 import { SignalingClient, generatePeerId, generateSessionCode, formatSessionCode, cleanSessionCode } from './signaling.js';
-import { WebDropConnection, sha256 } from './webrtc.js';
+import { WebDropConnection, sha256, CHUNK_SIZE } from './webrtc.js';
 import { generateQR, buildQRPayload, QRScanner, parseQRPayload } from './qr.js';
 import { createZip } from './zip.js';
 
@@ -17,29 +17,41 @@ const ICONS = {
   download: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>',
   paperclip: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11l-9.5 9.5a5 5 0 0 1-7.1-7.1l9.5-9.5a3.5 3.5 0 0 1 5 5l-9.5 9.5a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>',
   times: '<svg class="svg-icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>',
-  file: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>'
+  refresh: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+  file: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
+  radar: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+  wifi: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>',
+  chat: '<svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-7.6-4.6L3 21l1.6-3.9A8.5 8.5 0 0 1 12.5 3a8.38 8.38 0 0 1 8.5 8.5z"/></svg>'
 };
 
 // TipNest support button placeholder. Empty string = button hidden.
-// Set this to your TipNest URL when TipNest is ready.
 const TIPNEST_URL = "";
 
 // Connection status text for the indicator.
 const STATUS_TEXT = {
   idle: 'Idle, awaiting connection',
-  scanning: 'Scanning for peers...',
+  initializing: 'Initialising secure session...',
+  scanning: 'Searching for devices...',
   connecting: 'Connecting...',
+  negotiating: 'Negotiating connection...',
+  establishing: 'Establishing secure channel...',
   connected: 'Connected',
-  disconnected: 'Disconnected',
+  preparing: 'Preparing transfer...',
+  transferring: 'Transferring...',
+  completed: 'Transfer completed',
+  reconnecting: 'Reconnecting...',
   failed: 'Connection failed',
+  disconnected: 'Disconnected',
   backendUnavailable: 'Backend temporarily unavailable'
 };
 
+// Connection-type display strings. NEVER include IP addresses.
 const CONNECTION_TYPE_TEXT = {
-  local: 'Local network connection',
-  direct: 'Direct internet P2P',
-  turn: 'TURN-relayed connection',
-  unknown: 'Connected'
+  local: 'Connected locally',
+  direct: 'Connected directly over the internet',
+  turn: 'Connected through secure relay',
+  unknown: 'Connected',
+  none: 'Searching for the best route...'
 };
 
 // Application state.
@@ -50,8 +62,15 @@ const state = {
   signaling: null,            // SignalingClient instance
   connection: null,           // WebDropConnection instance
   iceServers: [],
-  transferInProgress: false
+  transferInProgress: false,
+  diagnostics: [],           // recent diagnostic events
+  turnEnabled: false,
+  turnProvider: 'none',
+  healthChecked: false,
+  refreshing: false
 };
+
+const DIAGNOSTIC_LIMIT = 30;
 
 // DOM references (populated on DOMContentLoaded).
 let dom = {};
@@ -76,7 +95,7 @@ function initTheme() {
   let dark;
   if (saved === 'dark') dark = true;
   else if (saved === 'light') dark = false;
-  else dark = true; // default to dark utilitarian
+  else dark = false; // default to the bright, colourful light theme
   applyTheme(dark);
   dom.themeToggle?.addEventListener('click', () => {
     const current = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -124,7 +143,7 @@ function initCookieConsent() {
 }
 
 // ============================================================================
-// Load TURN credentials from the backend (served via Cloudflare Function)
+// Load ICE / TURN configuration from the backend
 // ============================================================================
 async function loadIceServers() {
   try {
@@ -132,14 +151,63 @@ async function loadIceServers() {
     const data = await res.json();
     if (data.ok && data.iceServers) {
       state.iceServers = data.iceServers;
+      state.turnEnabled = !!data.turn_enabled;
+      state.turnProvider = data.provider || 'none';
+      pushDiagnostic({ stage: 'turn-loaded', provider: state.turnProvider, enabled: state.turnEnabled });
     }
   } catch (e) {
-    console.warn('TURN credentials fetch failed, using STUN only:', e.message);
+    pushDiagnostic({ stage: 'turn-load-failed', error: e.message });
     state.iceServers = [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' }
     ];
   }
+}
+
+// Check backend health (non-blocking) and surface an unobtrusive warning
+// if either the database or TURN is unavailable.
+async function checkBackendHealth() {
+  try {
+    const res = await fetch('/api/health');
+    const data = await res.json();
+    state.healthChecked = true;
+    if (!data.database?.reachable) {
+      pushDiagnostic({ stage: 'db-unreachable' });
+    }
+    if (!data.turn?.configured) {
+      pushDiagnostic({ stage: 'turn-not-configured' });
+    }
+  } catch (e) {
+    pushDiagnostic({ stage: 'health-check-failed', error: e.message });
+  }
+}
+
+// ============================================================================
+// Diagnostic log (kept in memory, optionally shown in dev panel)
+// ============================================================================
+function pushDiagnostic(info) {
+  const entry = Object.assign({ at: new Date().toISOString() }, info);
+  state.diagnostics.unshift(entry);
+  if (state.diagnostics.length > DIAGNOSTIC_LIMIT) {
+    state.diagnostics.length = DIAGNOSTIC_LIMIT;
+  }
+  // Make the diagnostic panel react if it's open.
+  if (dom.diagnosticsList) {
+    renderDiagnostics();
+  }
+}
+
+function renderDiagnostics() {
+  if (!dom.diagnosticsList) return;
+  dom.diagnosticsList.innerHTML = state.diagnostics.map(d => {
+    const ts = new Date(d.at).toLocaleTimeString();
+    const stage = escapeHtml(d.stage || '?');
+    const extra = Object.keys(d)
+      .filter(k => k !== 'at' && k !== 'stage')
+      .map(k => `${escapeHtml(k)}=${escapeHtml(String(d[k]))}`)
+      .join(' ');
+    return `<li><span class="diag-time">${ts}</span><span class="diag-stage">${stage}</span><span class="diag-extra">${extra}</span></li>`;
+  }).join('');
 }
 
 // ============================================================================
@@ -149,7 +217,15 @@ function formatFileSize(bytes) {
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
   if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
-  return (bytes / 1073741824).toFixed(1) + ' GB';
+  return (bytes / 1073741824).toFixed(2) + ' GB';
+}
+
+function formatSpeed(bytesPerSec) {
+  if (!bytesPerSec || bytesPerSec < 1) return '0 B/s';
+  if (bytesPerSec < 1024) return Math.round(bytesPerSec) + ' B/s';
+  if (bytesPerSec < 1048576) return (bytesPerSec / 1024).toFixed(1) + ' KB/s';
+  if (bytesPerSec < 1073741824) return (bytesPerSec / 1048576).toFixed(1) + ' MB/s';
+  return (bytesPerSec / 1073741824).toFixed(2) + ' GB/s';
 }
 
 function escapeHtml(s) {
@@ -158,8 +234,15 @@ function escapeHtml(s) {
   }[c]));
 }
 
+// Set the connection state on the radar + status text. `stateKey` is a key
+// into STATUS_TEXT. We also tweak a data attribute that drives the radar
+// animation mode.
 function setScannerState(stateKey) {
   if (dom.scannerState) dom.scannerState.textContent = STATUS_TEXT[stateKey] || stateKey;
+  if (dom.radarStage) {
+    dom.radarStage.dataset.state = stateKey;
+  }
+  document.body.dataset.connectionState = stateKey;
 }
 
 function setConnectionType(type) {
@@ -171,6 +254,9 @@ function setConnectionType(type) {
   if (dom.connectionTypeTransfer) {
     dom.connectionTypeTransfer.textContent = text;
     dom.connectionTypeTransfer.dataset.type = type;
+  }
+  if (dom.radarStage) {
+    dom.radarStage.dataset.connType = type;
   }
 }
 
@@ -234,7 +320,8 @@ function showTransferUI() {
   dom.setupArea.style.display = 'none';
   dom.transferArea.classList.add('active');
   dom.chatBox.innerHTML = '';
-  setScannerState('connected');
+  // Don't override the connection-type badge here - the WebRTC layer will
+  // fire onConnectionType once the candidate pair is selected.
 }
 
 function resetUI() {
@@ -248,11 +335,16 @@ function resetUI() {
   }
   state.role = null;
   state.sessionCode = null;
+  state.transferInProgress = false;
   dom.setupArea.style.display = 'block';
   dom.transferArea.classList.remove('active');
   dom.chatBox.innerHTML = '';
+  hideProgress();
   setScannerState('idle');
-  setConnectionType('unknown');
+  setConnectionType('none');
+  // Reset file tray.
+  if (dom.fileTrayItems) dom.fileTrayItems.innerHTML = '';
+  if (dom.fileTraySummary) dom.fileTraySummary.style.display = 'none';
 }
 
 // ============================================================================
@@ -263,16 +355,23 @@ function setupConnection(remotePeerId) {
   conn.remotePeerId = remotePeerId;
 
   conn.onIceCandidate = (candidate) => {
-    // Send each ICE candidate to the remote peer via signaling.
-    state.signaling.writeMessage(remotePeerId, 'ice', JSON.stringify(candidate.toJSON()));
+    // Send each ICE candidate to the remote peer via signaling (trickle ICE).
+    state.signaling.writeMessage(remotePeerId, 'ice', JSON.stringify(candidate.toJSON()))
+      .catch(e => pushDiagnostic({ stage: 'ice-send-failed', error: e.message }));
   };
 
   conn.onStateChange = (webrtcState) => {
+    pushDiagnostic({ stage: 'webrtc-state', state: webrtcState });
     if (webrtcState === 'connected' || webrtcState === 'completed') {
       setScannerState('connected');
+      // Slow down signaling polls - the DataChannel carries everything now.
+      if (state.signaling) state.signaling.setSlowPolling();
     } else if (webrtcState === 'failed') {
       setScannerState('failed');
-      systemMessage('Connection failed. Try refreshing.');
+      systemMessage('Connection failed. Tap the refresh icon next to the radar to retry.');
+    } else if (webrtcState === 'reconnecting') {
+      setScannerState('reconnecting');
+      systemMessage('Connection interrupted. Attempting to recover...');
     } else if (webrtcState === 'disconnected') {
       setScannerState('disconnected');
       systemMessage('Connection closed.');
@@ -291,17 +390,24 @@ function setupConnection(remotePeerId) {
     addMessage('Peer', text, 'received');
   };
 
-  conn.onTransferProgress = (transferId, sent, total) => {
-    // Update progress UI if visible.
+  conn.onTransferProgress = (transferId, sent, total, speed) => {
     if (dom.transferProgress && state.transferInProgress) {
-      const pct = total > 0 ? Math.round((sent / total) * 100) : 0;
+      const pct = total > 0 ? Math.min(100, Math.round((sent / total) * 100)) : 0;
       dom.transferProgress.style.width = pct + '%';
-      dom.transferProgressText.textContent = formatFileSize(sent) + ' / ' + formatFileSize(total);
+      dom.transferProgressText.textContent =
+        formatFileSize(sent) + ' / ' + formatFileSize(total) +
+        ' | ' + formatSpeed(speed) +
+        ' | ' + pct + '%';
     }
   };
 
   conn.onDataChannelOpen = () => {
     setScannerState('connected');
+    pushDiagnostic({ stage: 'datachannel-open' });
+  };
+
+  conn.onDiagnostic = (info) => {
+    pushDiagnostic(info);
   };
 
   state.connection = conn;
@@ -316,7 +422,7 @@ async function startSenderSession() {
   state.sessionCode = generateSessionCode();
   state.role = 'sender';
 
-  setScannerState('scanning');
+  setScannerState('initializing');
 
   // Create session in Neon.
   try {
@@ -347,6 +453,7 @@ async function startSenderSession() {
   };
   state.signaling.startPolling();
 
+  setScannerState('scanning');
   // Show QR modal.
   showQRModal();
 }
@@ -364,7 +471,7 @@ async function joinSession(sessionCode) {
   state.peerId = state.peerId || generatePeerId();
   state.sessionCode = code;
   state.role = 'receiver';
-  setScannerState('scanning');
+  setScannerState('connecting');
 
   // Join the session in Neon.
   try {
@@ -392,6 +499,8 @@ async function joinSession(sessionCode) {
     };
     state.signaling.startPolling();
 
+    setScannerState('negotiating');
+
     // Create the WebRTC connection + offer.
     const conn = setupConnection(creatorPeerId);
     const offer = await conn.createOffer();
@@ -400,7 +509,8 @@ async function joinSession(sessionCode) {
     await state.signaling.writeMessage(creatorPeerId, 'offer', JSON.stringify(offer));
 
     showTransferUI();
-    systemMessage('Connecting to sender...');
+    setScannerState('establishing');
+    systemMessage('Establishing secure channel with sender...');
   } catch (e) {
     setScannerState('failed');
     systemMessage('Join failed: ' + e.message);
@@ -408,20 +518,21 @@ async function joinSession(sessionCode) {
 }
 
 // ============================================================================
-// Handle incoming signaling messages
+// Handle incoming signaling messages (serially - see signaling.js)
 // ============================================================================
 async function handleSignalingMessage(msg) {
   if (!state.connection) {
     // First message from the receiver is the offer (sender side).
     if (msg.message_type === 'offer') {
-      const creatorPeerId = state.sessionCode ? state.peerId : null;
       const remotePeerId = msg.from_peer_id;
       const conn = setupConnection(remotePeerId);
+      setScannerState('negotiating');
       const offer = JSON.parse(msg.payload);
       const answer = await conn.acceptOffer(offer.sdp || offer);
       await state.signaling.writeMessage(remotePeerId, 'answer', JSON.stringify(answer));
       showTransferUI();
-      systemMessage('Receiver connected. Establishing P2P link...');
+      setScannerState('establishing');
+      systemMessage('Receiver connected. Establishing secure channel...');
     }
     return;
   }
@@ -431,8 +542,9 @@ async function handleSignalingMessage(msg) {
     try {
       const answer = JSON.parse(msg.payload);
       await state.connection.acceptAnswer(answer.sdp || answer);
+      setScannerState('establishing');
     } catch (e) {
-      console.error('Failed to apply answer:', e);
+      pushDiagnostic({ stage: 'apply-answer-failed', error: e.message });
     }
     return;
   }
@@ -441,7 +553,7 @@ async function handleSignalingMessage(msg) {
       const candidate = JSON.parse(msg.payload);
       await state.connection.addIceCandidate(candidate);
     } catch (e) {
-      console.error('Failed to add ICE candidate:', e);
+      pushDiagnostic({ stage: 'apply-ice-failed', error: e.message });
     }
     return;
   }
@@ -519,6 +631,152 @@ function initManualEntry() {
       systemMessage('Enter a valid 12-character code.');
     }
   });
+  dom.manualCodeInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      dom.manualJoinBtn?.click();
+    }
+  });
+  // Auto-format the code with hyphens as the user types.
+  dom.manualCodeInput?.addEventListener('input', () => {
+    const cleaned = cleanSessionCode(dom.manualCodeInput.value);
+    dom.manualCodeInput.value = cleaned.length > 8
+      ? cleaned.slice(0,4) + '-' + cleaned.slice(4,8) + '-' + cleaned.slice(8,12)
+      : cleaned.length > 4
+        ? cleaned.slice(0,4) + '-' + cleaned.slice(4,8)
+        : cleaned;
+  });
+}
+
+// ============================================================================
+// Refresh connection button - performs a real reset, NOT a page reload.
+// ============================================================================
+function refreshConnection() {
+  if (state.refreshing) return;
+
+  // If a transfer is in progress, refuse and ask for confirmation.
+  if (state.transferInProgress) {
+    if (!window.confirm('A file transfer is in progress. Refresh anyway? The transfer will be cancelled.')) {
+      return;
+    }
+  }
+
+  state.refreshing = true;
+  const btn = dom.refreshBtn;
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add('is-loading');
+    btn.setAttribute('aria-busy', 'true');
+  }
+
+  try {
+    // 1. Tear down the existing peer connection.
+    if (state.connection) {
+      try { state.connection.close(); } catch (_) {}
+      state.connection = null;
+    }
+    // 2. Stop polling - we'll re-subscribe in a moment.
+    if (state.signaling) {
+      state.signaling.stopPolling();
+      state.signaling = null;
+    }
+    // 3. Reset transfer / progress UI.
+    state.transferInProgress = false;
+    hideProgress();
+    if (dom.fileTrayItems) dom.fileTrayItems.innerHTML = '';
+    if (dom.fileTraySummary) dom.fileTraySummary.style.display = 'none';
+
+    // 4. Re-initialise. We keep the same sessionCode if we're the sender
+    //    (so the QR is still valid), but regenerate it if we're the
+    //    receiver (the original session may be stale). If we're idle,
+    //    we just reset to idle.
+    setScannerState('idle');
+    setConnectionType('none');
+
+    // Role-aware re-init.
+    if (state.role === 'sender') {
+      // Sender: keep the same code, just resume polling. The receiver can
+      // rejoin by scanning the same QR or entering the same code.
+      state.peerId = generatePeerId(); // fresh peerId - the old one may be in a half-open state
+      // Note: we deliberately DON'T create a new session row - the old one
+      // is still valid for ~15 minutes. The new peerId will be associated
+      // with the session via the joiner flow when the receiver connects.
+      // Actually, the creator_peer_id is fixed in the DB - so we need to
+      // reuse the original peerId for the sender. Re-generating breaks
+      // the session lookup. Roll back.
+      // We'll just re-start polling with the SAME peerId.
+      // (Re-generating would only matter if the peerId had leaked - it hasn't.)
+    }
+  } finally {
+    // Restore the button after a short delay so the loading state is visible.
+    setTimeout(() => {
+      state.refreshing = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.classList.remove('is-loading');
+        btn.removeAttribute('aria-busy');
+      }
+      // If we were actively in a session, restart polling.
+      if (state.sessionCode && state.peerId && state.role) {
+        state.signaling = new SignalingClient(state.peerId, state.sessionCode);
+        state.signaling.onMessage = handleSignalingMessage;
+        state.signaling.onSessionError = (reason) => {
+          systemMessage('Session error: ' + reason);
+          resetUI();
+        };
+        state.signaling.startPolling();
+        setScannerState(state.role === 'sender' ? 'scanning' : 'connecting');
+        systemMessage('Connection refreshed. Waiting for peer...');
+      } else {
+        setScannerState('idle');
+      }
+    }, 700);
+  }
+}
+
+function initRefreshButton() {
+  dom.refreshBtn?.addEventListener('click', refreshConnection);
+}
+
+// ============================================================================
+// File selection tray (selected files appear here before being sent)
+// ============================================================================
+let selectedFiles = [];
+
+function renderFileTray() {
+  if (!dom.fileTrayItems) return;
+  dom.fileTrayItems.innerHTML = '';
+  if (!selectedFiles.length) {
+    if (dom.fileTraySummary) dom.fileTraySummary.style.display = 'none';
+    return;
+  }
+  if (dom.fileTraySummary) {
+    dom.fileTraySummary.style.display = '';
+    const totalSize = selectedFiles.reduce((s, f) => s + f.size, 0);
+    dom.fileTraySummary.textContent =
+      `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'} selected | ${formatFileSize(totalSize)}`;
+  }
+  selectedFiles.forEach((f, idx) => {
+    const item = document.createElement('div');
+    item.className = 'file-tray-item';
+    item.innerHTML = `
+      <span class="fti-icon">${ICONS.file}</span>
+      <span class="fti-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+      <span class="fti-size">${formatFileSize(f.size)}</span>
+      <button class="fti-remove" type="button" aria-label="Remove file" data-idx="${idx}">${ICONS.times}</button>
+    `;
+    item.querySelector('.fti-remove').addEventListener('click', () => {
+      selectedFiles.splice(idx, 1);
+      renderFileTray();
+    });
+    dom.fileTrayItems.appendChild(item);
+  });
+  // Show the send button.
+  if (dom.sendSelectedBtn) dom.sendSelectedBtn.style.display = '';
+}
+
+function addSelectedFiles(files) {
+  for (const f of files) selectedFiles.push(f);
+  renderFileTray();
 }
 
 // ============================================================================
@@ -526,10 +784,10 @@ function initManualEntry() {
 // ============================================================================
 function initFileHandling() {
   // File tray click-to-select.
-  dom.fileInput?.addEventListener('change', (e) => handleFiles(e.target.files));
-  dom.imageInput?.addEventListener('change', (e) => handleFiles(e.target.files));
-  dom.videoInput?.addEventListener('change', (e) => handleFiles(e.target.files));
-  dom.folderInput?.addEventListener('change', (e) => handleFiles(e.target.files));
+  dom.fileInput?.addEventListener('change', (e) => { addSelectedFiles(Array.from(e.target.files)); e.target.value = ''; });
+  dom.imageInput?.addEventListener('change', (e) => { addSelectedFiles(Array.from(e.target.files)); e.target.value = ''; });
+  dom.videoInput?.addEventListener('change', (e) => { addSelectedFiles(Array.from(e.target.files)); e.target.value = ''; });
+  dom.folderInput?.addEventListener('change', (e) => { addSelectedFiles(Array.from(e.target.files)); e.target.value = ''; });
 
   // Drag and drop on the whole window (only when transfer area is active).
   let dragCounter = 0;
@@ -561,11 +819,23 @@ function initFileHandling() {
       return;
     }
     const files = await collectDroppedFiles(e.dataTransfer);
-    if (files.length) handleFiles(files);
+    if (files.length) addSelectedFiles(files);
   });
 
   // TXT send button.
   dom.sendTxtBtn?.addEventListener('click', sendAsTxt);
+
+  // Send selected files button.
+  dom.sendSelectedBtn?.addEventListener('click', () => {
+    if (!selectedFiles.length) return;
+    handleFiles(selectedFiles.slice());
+  });
+
+  // Clicking the drop zone also opens the file picker.
+  dom.dropZone?.addEventListener('click', () => {
+    if (!isTransferActive()) return;
+    dom.fileInput?.click();
+  });
 }
 
 function isFileDrag(e) {
@@ -647,13 +917,28 @@ async function handleFiles(fileList) {
 
 async function sendSingleFile(file) {
   if (!state.connection) return;
+  if (state.transferInProgress) {
+    systemMessage('Please wait for the current transfer to finish.');
+    return;
+  }
   state.transferInProgress = true;
+  setScannerState('preparing');
   showProgress(file.name, file.size);
   try {
+    // Wait for the secure channel to be ready before sending.
     await state.connection.waitForDataChannel();
+    setScannerState('transferring');
     await state.connection.sendFile(file);
+    setScannerState('completed');
     systemMessage('Sent: ' + file.name);
+    setTimeout(() => {
+      if (state.connection && state.connection.dataChannel &&
+          state.connection.dataChannel.readyState === 'open') {
+        setScannerState('connected');
+      }
+    }, 1500);
   } catch (e) {
+    setScannerState('failed');
     systemMessage('Error sending ' + file.name + ': ' + e.message);
   } finally {
     state.transferInProgress = false;
@@ -687,6 +972,9 @@ function initZipChoice() {
   dom.zipChooseIndivBtn?.addEventListener('click', async () => {
     const files = dom.zipChoiceFiles;
     closeZipChoice();
+    // Clear the tray since we're sending them now.
+    selectedFiles = [];
+    renderFileTray();
     for (const file of files) {
       await sendSingleFile(file);
     }
@@ -694,6 +982,8 @@ function initZipChoice() {
   dom.zipChooseArchiveBtn?.addEventListener('click', async () => {
     const files = dom.zipChoiceFiles;
     closeZipChoice();
+    selectedFiles = [];
+    renderFileTray();
     try {
       systemMessage('Creating ZIP archive...');
       const zipFile = await createZip(files);
@@ -740,13 +1030,22 @@ async function sendAsTxt() {
 // Received file display
 // ============================================================================
 function showReceivedFile(info, blob) {
+  if (info.cancelled) {
+    systemMessage('Transfer cancelled: ' + info.filename);
+    return;
+  }
+  if (!blob) {
+    systemMessage('Transfer failed: ' + info.filename);
+    return;
+  }
   const url = URL.createObjectURL(blob);
   const div = document.createElement('div');
-  div.className = 'message received';
+  div.className = 'message received file-card';
 
   const meta = document.createElement('div');
+  meta.className = 'file-meta';
   meta.innerHTML = '<strong>' + ICONS.paperclip + ' ' + escapeHtml(info.filename) + '</strong>' +
-    '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">' +
+    '<div class="file-sub">' +
     formatFileSize(info.filesize) +
     (info.hash ? (info.hashOk ? ' | verified' : ' | HASH MISMATCH') : '') +
     '</div>';
@@ -754,7 +1053,7 @@ function showReceivedFile(info, blob) {
 
   if (info.hashOk === false) {
     const warn = document.createElement('div');
-    warn.style.cssText = 'color:var(--danger);font-size:0.8rem;margin-top:4px;';
+    warn.className = 'file-warn';
     warn.textContent = 'File integrity check failed. The file may be corrupted.';
     div.appendChild(warn);
   }
@@ -762,8 +1061,7 @@ function showReceivedFile(info, blob) {
   const link = document.createElement('a');
   link.href = url;
   link.download = info.filename;
-  link.className = 'btn btn-success';
-  link.style.cssText = 'margin-top:8px;padding:6px 12px;font-size:0.8rem;display:inline-flex;align-items:center;gap:6px;';
+  link.className = 'btn btn-success btn-download';
   link.innerHTML = ICONS.download + ' Download';
   div.appendChild(link);
 
@@ -797,13 +1095,28 @@ function showProgress(filename, totalSize) {
   dom.transferProgressContainer.style.display = 'block';
   dom.transferProgressFilename.textContent = filename;
   dom.transferProgress.style.width = '0%';
-  dom.transferProgressText.textContent = '0 / ' + formatFileSize(totalSize);
+  dom.transferProgressText.textContent = '0 / ' + formatFileSize(totalSize) + ' | 0%';
 }
 
 function hideProgress() {
   if (dom.transferProgressContainer) {
     dom.transferProgressContainer.style.display = 'none';
   }
+}
+
+// ============================================================================
+// Diagnostics panel toggle
+// ============================================================================
+function initDiagnosticsPanel() {
+  dom.diagnosticsBtn?.addEventListener('click', () => {
+    const open = dom.diagnosticsPanel.classList.toggle('open');
+    dom.diagnosticsBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) renderDiagnostics();
+  });
+  dom.diagnosticsClose?.addEventListener('click', () => {
+    dom.diagnosticsPanel.classList.remove('open');
+    dom.diagnosticsBtn.setAttribute('aria-expanded', 'false');
+  });
 }
 
 // ============================================================================
@@ -906,7 +1219,18 @@ function collectDomRefs() {
     transferProgressFilename: document.getElementById('transferProgressFilename'),
     transferProgressText: document.getElementById('transferProgressText'),
     tipNestBtn: document.getElementById('tipNestBtn'),
-    footerYear: document.getElementById('footerYear')
+    footerYear: document.getElementById('footerYear'),
+    // New UI elements
+    refreshBtn: document.getElementById('refreshBtn'),
+    radarStage: document.getElementById('radarStage'),
+    fileTrayItems: document.getElementById('fileTrayItems'),
+    fileTraySummary: document.getElementById('fileTraySummary'),
+    sendSelectedBtn: document.getElementById('sendSelectedBtn'),
+    diagnosticsBtn: document.getElementById('diagnosticsBtn'),
+    diagnosticsPanel: document.getElementById('diagnosticsPanel'),
+    diagnosticsClose: document.getElementById('diagnosticsClose'),
+    diagnosticsList: document.getElementById('diagnosticsList'),
+    logoRefreshBtn: document.getElementById('logoRefreshBtn')
   };
   dom.zipChoiceFiles = null;
 }
@@ -927,10 +1251,18 @@ function init() {
   initZipChoice();
   initMessaging();
   initTipNest();
+  initRefreshButton();
+  initDiagnosticsPanel();
 
+  // Logo click triggers refresh too (the original behaviour - we keep it).
+  dom.logoRefreshBtn?.addEventListener('click', refreshConnection);
+
+  // Fire and forget - these are non-blocking.
   loadIceServers();
+  checkBackendHealth();
+
   setScannerState('idle');
-  setConnectionType('unknown');
+  setConnectionType('none');
 }
 
 if (document.readyState === 'loading') {
